@@ -272,19 +272,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-light: #6366f1;
-            --secondary: #0ea5e9;
-            --bg-dark: #0f172a;
-            --surface: #1e293b;
+            --primary: #2C3E50;
+            --primary-light: #4C9F8A;
+            --secondary: #3A7B6B;
+            --bg-dark: #0F172A;
+            --surface: #1E293B;
             --surface-hover: #334155;
             --border-color: #334155;
-            --text-main: #f8fafc;
+            --text-main: #F8F9FA;
             --text-muted: #94a3b8;
-            --error: #ef4444;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --focus-ring: rgba(99, 102, 241, 0.5);
+            --error: #C65D5D;
+            --success: #2E8B57;
+            --warning: #D97706;
+            --focus-ring: rgba(76, 159, 138, 0.5);
         }
 
         * {
