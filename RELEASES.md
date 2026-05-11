@@ -1,5 +1,23 @@
 # 📦 OpenShelf — Release History
 
+## 🚀 v2.9.1 — The "Unified Public Experience"
+
+**Release Date:** May 11, 2026
+
+This release completes the platform-wide visual modernization by unifying the design language across all public-facing pages. Every public touchpoint now reflects our modern **Deep Indigo & Muted Teal** identity with full dark mode support and responsive refinement.
+
+### Highlights
+
+- 🎭 **Public Page Renaissance** — Complete modernization of `about.php`, `contact.php`, `faq.php`, `privacy.php`, `terms.php`, `guidelines.php`, and `report.php`.
+- 💳 **Premium Support Portal** — High-fidelity redesign of the `Support Us` page with optimized payment UI and brand-aligned styling.
+- 🔐 **Reimagined Security UI** — Overhauled the `Forget Password` flow with a sleek, multi-step interface and premium aesthetics.
+- 📡 **Resilient Offline Experience** — Redesigned `Offline` fallback page with glassmorphic UI and animated connectivity indicators.
+
+📄 Full details: [v2.9.1 Release Notes](v2.9.1_release_notes.md)
+
+---
+
+
 ## 🚀 v2.9.0 — The "Admin Renaissance" & Intelligent Discovery
 
 **Release Date:** May 10, 2026
