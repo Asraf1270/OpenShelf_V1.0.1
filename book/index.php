@@ -14,6 +14,7 @@ define('BASE_URL', 'https://openshelf.free.nf');
 
 // Include database connection
 require_once dirname(__DIR__) . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/BookCardGrid.php';
 
 // Initialize mailer
 $mailer = null;
@@ -913,59 +914,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action']) && $_P
             gap: 0.75rem;
         }
         .related-title i { color: var(--primary); }
-        .related-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 1rem;
-        }
-
-        @media (min-width: 900px) {
-            .related-grid {
-                grid-template-columns: repeat(4, minmax(0, 1fr));
-                gap: 1.5rem;
-            }
-        }
-        .related-card {
-            background: white;
-            border-radius: var(--radius-md);
-            overflow: hidden;
-            border: 1px solid var(--border);
-            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-            text-decoration: none;
-            color: inherit;
-        }
-        .related-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border-color: var(--primary);
-        }
-        .related-cover {
-            aspect-ratio: 3/4.2;
-            overflow: hidden;
-        }
-        .related-cover img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.6s;
-        }
-        .related-card:hover .related-cover img { transform: scale(1.1); }
-        .related-body { padding: 1.25rem; }
-        .related-book-title {
-            font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 0.4rem;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            line-height: 1.3;
-            color: var(--text-main);
-        }
-        .related-book-author { font-size: 0.85rem; color: var(--text-muted); }
-
-        [data-theme="dark"] .related-card { background: #1e293b; border-color: #334155; }
-        [data-theme="dark"] .related-book-title { color: #f8fafc; }
     </style>
 </head>
 <body>
@@ -1249,21 +1197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action']) && $_P
                 <i class="fas fa-layer-group"></i>
                 Related Books
             </h2>
-            <div class="related-grid">
-                <?php foreach ($relatedBooks as $rBook): 
-                    $rCover = getCoverImagePath($rBook['cover_image'] ?? '');
-                ?>
-                    <a href="/book/?id=<?php echo $rBook['id']; ?>" class="related-card">
-                        <div class="related-cover">
-                            <img src="<?php echo $rCover; ?>" alt="<?php echo htmlspecialchars($rBook['title']); ?>" loading="lazy">
-                        </div>
-                        <div class="related-body">
-                            <h3 class="related-book-title"><?php echo htmlspecialchars($rBook['title']); ?></h3>
-                            <p class="related-book-author">By <?php echo htmlspecialchars($rBook['author']); ?></p>
-                        </div>
-                    </a>
-                <?php endforeach; ?>
-            </div>
+            <?php renderBookCardGrid($relatedBooks, ['gridClass' => 'book-grid']); ?>
         </div>
     </div>
     <?php endif; ?>

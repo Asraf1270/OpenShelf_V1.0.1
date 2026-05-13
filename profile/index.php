@@ -6,6 +6,7 @@
 
 session_start();
 include dirname(__DIR__) . '/includes/header.php';
+include dirname(__DIR__) . '/includes/BookCardGrid.php';
 echo '<link rel="stylesheet" href="/assets/css/profile.css">';
 
 // Configuration
@@ -301,28 +302,7 @@ $showSensitiveInfo = $isOwnProfile; // Only owner can see sensitive info like ro
                 <p>No owned books to show.</p>
             </div>
         <?php else: ?>
-            <div class="book-grid-profile">
-                <?php foreach ($books as $book): ?>
-                    <div class="book-card">
-                        <div class="book-cover">
-                            <img src="/uploads/book_cover/thumb_<?php echo $book['cover_image'] ?? 'default.jpg'; ?>" 
-                                 alt="<?php echo htmlspecialchars($book['title']); ?>"
-                                 onerror="this.src='/assets/images/default-book-cover.jpg'">
-                            <span class="book-status status-<?php echo $book['status']; ?>">
-                                <?php echo ucfirst($book['status']); ?>
-                            </span>
-                        </div>
-                        <div class="book-info">
-                            <h3 class="book-title">
-                                <a href="/book/?id=<?php echo $book['id']; ?>">
-                                    <?php echo htmlspecialchars($book['title']); ?>
-                                </a>
-                            </h3>
-                            <p class="book-author"><?php echo htmlspecialchars($book['author']); ?></p>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
+            <?php renderBookCardGrid($books, ['showOwner' => false]); ?>
         <?php endif; ?>
     </div>
 
@@ -333,29 +313,11 @@ $showSensitiveInfo = $isOwnProfile; // Only owner can see sensitive info like ro
                 <p>No borrowed books to show.</p>
             </div>
         <?php else: ?>
-            <div class="book-grid-profile">
-                <?php foreach ($borrowedBooks as $book): ?>
-                    <div class="book-card">
-                        <div class="book-cover">
-                            <img src="/uploads/book_cover/thumb_<?php echo $book['cover_image'] ?? 'default.jpg'; ?>" 
-                                 alt="<?php echo htmlspecialchars($book['title']); ?>"
-                                 onerror="this.src='/assets/images/default-book-cover.jpg'">
-                            <span class="book-status status-<?php echo $book['status']; ?>">
-                                <?php echo ucfirst($book['status']); ?>
-                            </span>
-                        </div>
-                        <div class="book-info">
-                            <h3 class="book-title">
-                                <a href="/book/?id=<?php echo $book['id']; ?>">
-                                    <?php echo htmlspecialchars($book['title']); ?>
-                                </a>
-                            </h3>
-                            <p class="book-author">By <?php echo htmlspecialchars($book['author']); ?></p>
-                            <p style="font-size: 0.7rem; color: var(--gray-500); margin-top: 4px;">Borrowed from: <b><?php echo htmlspecialchars($book['owner_name']); ?></b></p>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
+            <?php renderBookCardGrid($borrowedBooks, [
+                'showOwner' => false,
+                'extraInfoKey' => 'owner_name',
+                'extraInfoLabel' => 'Borrowed from'
+            ]); ?>
         <?php endif; ?>
     </div>
 
@@ -366,29 +328,11 @@ $showSensitiveInfo = $isOwnProfile; // Only owner can see sensitive info like ro
                 <p>No books lent yet.</p>
             </div>
         <?php else: ?>
-            <div class="book-grid-profile">
-                <?php foreach ($lentBooks as $book): ?>
-                    <div class="book-card">
-                        <div class="book-cover">
-                            <img src="/uploads/book_cover/thumb_<?php echo $book['cover_image'] ?? 'default.jpg'; ?>" 
-                                 alt="<?php echo htmlspecialchars($book['title']); ?>"
-                                 onerror="this.src='/assets/images/default-book-cover.jpg'">
-                            <span class="book-status status-<?php echo $book['status']; ?>">
-                                <?php echo ucfirst($book['status']); ?>
-                            </span>
-                        </div>
-                        <div class="book-info">
-                            <h3 class="book-title">
-                                <a href="/book/?id=<?php echo $book['id']; ?>">
-                                    <?php echo htmlspecialchars($book['title']); ?>
-                                </a>
-                            </h3>
-                            <p class="book-author"><?php echo htmlspecialchars($book['author']); ?></p>
-                            <p style="font-size: 0.7rem; color: var(--gray-500); margin-top: 4px;">Lent to: <b><?php echo htmlspecialchars($book['borrower_name']); ?></b></p>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
+            <?php renderBookCardGrid($lentBooks, [
+                'showOwner' => false,
+                'extraInfoKey' => 'borrower_name',
+                'extraInfoLabel' => 'Lent to'
+            ]); ?>
         <?php endif; ?>
     </div>
 </div>
