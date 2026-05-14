@@ -12,6 +12,8 @@ define('DATA_PATH', dirname(__DIR__) . '/data/');
 define('BOOKS_PATH', dirname(__DIR__) . '/books/');
 define('USERS_PATH', dirname(__DIR__) . '/users/');
 
+require_once __DIR__ . '/../includes/db.php';
+
 // Check if user is logged in for write operations
 $isLoggedIn = isset($_SESSION['user_id']);
 $currentUserId = $_SESSION['user_id'] ?? null;
@@ -271,6 +273,22 @@ if ($method === 'POST') {
             $bookData['reviews'][] = $newReview;
             
             if (saveBookData($bookId, $bookData)) {
+                // Also update MySQL database
+                try {
+                    $db = getDB();
+                    $reviewCount = count($bookData['reviews']);
+                    $totalRating = 0;
+                    foreach ($bookData['reviews'] as $r) {
+                        $totalRating += $r['rating'];
+                    }
+                    $newAvgRating = round($totalRating / $reviewCount, 2);
+                    
+                    $stmt = $db->prepare("UPDATE books SET reviews = ?, rating = ?, rating_count = ?, updated_at = ? WHERE id = ?");
+                    $stmt->execute([json_encode($bookData['reviews']), $newAvgRating, $reviewCount, date('Y-m-d H:i:s'), $bookId]);
+                } catch (Exception $e) {
+                    error_log("Failed to update MySQL in add_review: " . $e->getMessage());
+                }
+
                 echo json_encode([
                     'success' => true,
                     'message' => 'Review added successfully',
@@ -447,6 +465,22 @@ if ($method === 'POST') {
                 array_splice($bookData['reviews'], $reviewIndex, 1);
                 
                 if (saveBookData($bookId, $bookData)) {
+                    // Also update MySQL database
+                    try {
+                        $db = getDB();
+                        $reviewCount = count($bookData['reviews']);
+                        $totalRating = 0;
+                        foreach ($bookData['reviews'] as $r) {
+                            $totalRating += $r['rating'];
+                        }
+                        $newAvgRating = $reviewCount > 0 ? round($totalRating / $reviewCount, 2) : 0;
+                        
+                        $stmt = $db->prepare("UPDATE books SET reviews = ?, rating = ?, rating_count = ?, updated_at = ? WHERE id = ?");
+                        $stmt->execute([json_encode($bookData['reviews']), $newAvgRating, $reviewCount, date('Y-m-d H:i:s'), $bookId]);
+                    } catch (Exception $e) {
+                        error_log("Failed to update MySQL in delete_review: " . $e->getMessage());
+                    }
+
                     echo json_encode(['success' => true, 'message' => 'Review deleted']);
                 } else {
                     echo json_encode(['success' => false, 'message' => 'Failed to delete review']);

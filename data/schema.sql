@@ -58,6 +58,8 @@ CREATE TABLE IF NOT EXISTS `books` (
   `tags` text DEFAULT NULL, -- JSON string
   `reviews` longtext DEFAULT NULL, -- JSON string
   `comments` longtext DEFAULT NULL, -- JSON string
+  `rating` decimal(3,2) DEFAULT 0.00,
+  `rating_count` int(11) DEFAULT 0,
   `status_updated_by` varchar(50) DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

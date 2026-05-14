@@ -7,6 +7,7 @@
 session_start();
 include dirname(__DIR__) . '/includes/header.php';
 include dirname(__DIR__) . '/includes/BookCardGrid.php';
+include dirname(__DIR__) . '/includes/BookCardList.php';
 
 // Configuration
 define('DATA_PATH', dirname(__DIR__) . '/data/');
@@ -28,7 +29,7 @@ function getBooks($search = '', $selectedCategories = [], $availability = '', $h
         }
 
         $sql = "
-            SELECT b.*, u.name as owner_name, u.profile_pic as owner_avatar 
+            SELECT b.*, u.name as owner_name, u.profile_pic as owner_avatar, u.hall as owner_hall
             FROM books b 
             LEFT JOIN users u ON b.owner_id = u.id 
             WHERE " . implode(' AND ', $where) . "
@@ -544,7 +545,15 @@ function toggleCategoryUrl($cat) {
             <a href="/books/" class="btn-elegant">View All Books</a>
         </div>
     <?php else: ?>
-        <?php renderBookCardGrid($filteredBooks, ['id' => 'booksGrid']); ?>
+        <!-- Desktop/Tablet View (Grid) -->
+        <div id="desktop-view-wrapper" class="hide-on-mobile">
+            <?php renderBookCardGrid($filteredBooks, ['id' => 'booksGridDesktop']); ?>
+        </div>
+        
+        <!-- Mobile View (List) -->
+        <div id="mobile-view-wrapper" class="show-on-mobile">
+            <?php renderBookCardList($filteredBooks, ['id' => 'booksGridMobile']); ?>
+        </div>
     <?php endif; ?>
 
 
@@ -565,7 +574,8 @@ let cursorDate = <?php echo json_encode($initialCursor['date']); ?>;
 let cursorId = <?php echo json_encode($initialCursor['id']); ?>;
 let isLoading = false;
 let hasMore = <?php echo ($totalFilteredCount > count($filteredBooks)) ? 'true' : 'false'; ?>;
-const booksGrid = document.getElementById('booksGrid');
+const booksGridDesktop = document.getElementById('booksGridDesktop');
+const booksGridMobile = document.getElementById('booksGridMobile');
 const loader = document.getElementById('loader');
 const countLabel = document.querySelector('#booksCountLabel strong');
 
@@ -699,7 +709,8 @@ async function refreshBooks() {
     cursorDate = null;
     cursorId = null;
     hasMore = true;
-    booksGrid.innerHTML = '';
+    if (booksGridDesktop) booksGridDesktop.innerHTML = '';
+    if (booksGridMobile) booksGridMobile.innerHTML = '';
     
     // Show loader
     loader.style.display = 'block';
@@ -792,9 +803,18 @@ async function loadMoreBooks() {
 
         if (result.success && result.data.length > 0) {
             result.data.forEach(book => {
-                const card = createBookCard(book);
-                booksGrid.appendChild(card);
-                window.cardObserver.observe(card);
+                const gridCard = createBookCardGrid(book);
+                const listCard = createBookCardList(book);
+                
+                if (booksGridDesktop) {
+                    booksGridDesktop.appendChild(gridCard);
+                    window.cardObserver.observe(gridCard);
+                }
+                
+                if (booksGridMobile) {
+                    booksGridMobile.appendChild(listCard);
+                    window.cardObserver.observe(listCard);
+                }
             });
 
             cursorDate = result.cursor.date;
@@ -802,7 +822,7 @@ async function loadMoreBooks() {
             hasMore = result.has_more;
             
             // Update showing count
-            const currentCount = booksGrid.querySelectorAll('.book-card').length;
+            const currentCount = booksGridDesktop ? booksGridDesktop.querySelectorAll('.book-card').length : 0;
             countLabel.textContent = currentCount;
         } else {
             hasMore = false;
@@ -821,7 +841,7 @@ async function loadMoreBooks() {
     }
 }
 
-function createBookCard(book) {
+function createBookCardGrid(book) {
     const div = document.createElement('div');
     div.className = 'book-card';
     div.dataset.title = book.title.toLowerCase();
@@ -829,37 +849,21 @@ function createBookCard(book) {
     div.dataset.date = book.created_at;
 
     const status = book.status.toLowerCase();
+    const rating = parseFloat(book.rating) || 0;
     
     div.innerHTML = `
         <div class="book-cover-container">
-            <img src="${book.cover_image}" 
-                 alt="${book.title}"
-                 loading="lazy"
-                 onerror="this.src='/assets/images/default-book-cover.jpg';">
-            <span class="book-badge badge-${status}">
-                ${status.charAt(0).toUpperCase() + status.slice(1)}
-            </span>
+            <img src="${book.cover_image}" alt="${book.title}" loading="lazy" onerror="this.src='/assets/images/default-book-cover.jpg';">
+            <span class="book-badge badge-${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
         </div>
-        
         <div class="book-info">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <div class="book-category-tag" style="margin-bottom: 0;">
-                    ${book.category || 'General'}
-                </div>
-            </div>
-            <h3 class="book-title">
-                <a href="/book/?id=${book.id}">
-                    ${book.title}
-                </a>
-            </h3>
+            <div class="book-category-tag">${book.category || 'General'}</div>
+            <h3 class="book-title"><a href="/book/?id=${book.id}">${book.title}</a></h3>
             <p class="book-author">By ${book.author || 'Unknown'}</p>
-            
+            ${getRatingHtml(book)}
             <div class="book-footer">
                 <div class="owner-info">
-                    <img src="${book.owner_avatar}" 
-                         alt="${book.owner_name}" 
-                         class="owner-avatar"
-                         onerror="this.src='/assets/images/avatars/default.jpg';">
+                    <img src="${book.owner_avatar}" alt="${book.owner_name}" class="owner-avatar" onerror="this.src='/assets/images/avatars/default.jpg';">
                     <span class="owner-name">${book.owner_name}</span>
                 </div>
             </div>
@@ -868,35 +872,106 @@ function createBookCard(book) {
     return div;
 }
 
+function createBookCardList(book) {
+    const div = document.createElement('div');
+    div.className = 'book-card-list';
+    div.dataset.title = book.title.toLowerCase();
+    div.dataset.author = book.author.toLowerCase();
+    div.dataset.date = book.created_at;
+
+    const status = book.status.toLowerCase();
+    const rating = parseFloat(book.rating) || 0;
+    
+    // Simple hall mapping in JS (matching helpers.php)
+    const halls = {'1': 'Amar Ekushey Hall', '2': 'Dr. Muhammad Shahidullah Hall', '3': 'Fazlul Huq Muslim Hall'};
+    const displayHall = halls[book.owner_hall || book.hall] || book.owner_hall || book.hall || 'N/A Hall';
+    
+    let starsHtml = '';
+    const roundedRating = Math.round(rating);
+    for (let i = 1; i <= 5; i++) {
+        starsHtml += `<i class="fas fa-star ${i <= roundedRating ? 'active' : ''}"></i>`;
+    }
+
+    div.innerHTML = `
+        <div class="status-sign status-${status}" title="${status.charAt(0).toUpperCase() + status.slice(1)}"></div>
+        <div class="card-cover-section">
+            <img src="${book.cover_image}" alt="${book.title}" class="book-cover-image" onerror="this.src='/assets/images/default-book-cover.jpg';">
+        </div>
+        <div class="card-info-section">
+            <h3 class="card-title">
+                <a href="/book/?id=${book.id}" style="text-decoration: none; color: inherit;">${book.title}</a>
+            </h3>
+            <p class="card-author">${book.author || 'Unknown'}</p>
+            <p class="category-label">${book.category || 'General'}</p>
+            <div class="rating-row">
+                <div class="stars-mini">${starsHtml}</div>
+                ${rating > 0 ? `<span class="rating-value">${rating.toFixed(1)}</span>` : ''}
+            </div>
+            <div class="card-owner">
+                <img src="${book.owner_avatar}" alt="${book.owner_name}" class="owner-avatar" onerror="this.src='/assets/images/avatars/default.jpg';">
+                <div class="owner-details">
+                    <a href="/profile/?id=${book.owner_id}" class="owner-name">${book.owner_name}</a>
+                    <span class="owner-hall">${displayHall}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    return div;
+}
+
+function getRatingHtml(book) {
+    const rating = parseFloat(book.rating) || 0;
+    const ratingCount = parseInt(book.rating_count) || 0;
+    
+    if (ratingCount === 0) return '';
+
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = (rating - fullStars) >= 0.5;
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    
+    let starsHtml = '';
+    for (let i = 0; i < fullStars; i++) starsHtml += '<i class="fas fa-star"></i>';
+    if (hasHalfStar) starsHtml += '<i class="fas fa-star-half-alt"></i>';
+    for (let i = 0; i < emptyStars; i++) starsHtml += '<i class="far fa-star"></i>';
+    
+    return `
+        <div class="book-rating" style="display: flex; align-items: center; gap: 0.2rem; margin-top: 0.35rem; font-size: 0.8rem; color: #f59e0b;">
+            <div class="stars" style="display: flex; gap: 1px;">${starsHtml}</div>
+            <span style="font-weight: 700; margin-left: 0.25rem;">${rating.toFixed(1)}</span>
+            <span style="color: var(--gray-500); font-weight: 400; font-size: 0.75rem;">(${ratingCount})</span>
+        </div>
+    `;
+}
+
 function sortBooks(criteria) {
-    const grid = document.getElementById('booksGrid');
-    if (!grid) return;
-    const books = Array.from(grid.children);
-    
-    books.sort((a, b) => {
-        if (criteria === 'title') return a.dataset.title.localeCompare(b.dataset.title);
-        if (criteria === 'author') return a.dataset.author.localeCompare(b.dataset.author);
-        return new Date(b.dataset.date || 0) - new Date(a.dataset.date || 0);
-    });
-    
-    books.forEach(book => {
-        book.style.transform = 'scale(0.95)';
-        book.style.opacity = '0';
-        book.classList.remove('show');
-    });
-    
-    setTimeout(() => {
-        books.forEach(book => grid.appendChild(book));
+    [booksGridDesktop, booksGridMobile].forEach(grid => {
+        if (!grid) return;
+        const books = Array.from(grid.children);
+        books.sort((a, b) => {
+            if (criteria === 'title') return a.dataset.title.localeCompare(b.dataset.title);
+            if (criteria === 'author') return a.dataset.author.localeCompare(b.dataset.author);
+            return new Date(b.dataset.date || 0) - new Date(a.dataset.date || 0);
+        });
+        
+        books.forEach(book => {
+            book.style.transform = 'scale(0.95)';
+            book.style.opacity = '0';
+            book.classList.remove('show');
+        });
+        
         setTimeout(() => {
-            books.forEach((book, index) => {
-                setTimeout(() => {
-                    book.style.transform = '';
-                    book.style.opacity = '';
-                    book.classList.add('show');
-                }, index * 30);
-            });
-        }, 50);
-    }, 300);
+            books.forEach(book => grid.appendChild(book));
+            setTimeout(() => {
+                books.forEach((book, index) => {
+                    setTimeout(() => {
+                        book.style.transform = '';
+                        book.style.opacity = '';
+                        book.classList.add('show');
+                    }, index * 30);
+                });
+            }, 50);
+        }, 300);
+    });
 }
 </script>
 

@@ -15,6 +15,7 @@ define('BASE_URL', 'https://openshelf.free.nf');
 // Include database connection
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/BookCardGrid.php';
+require_once dirname(__DIR__) . '/includes/BookCardList.php';
 
 // Initialize mailer
 $mailer = null;
@@ -215,7 +216,7 @@ function loadRelatedBooks($category, $excludeId, $limit = 4) {
     if (empty($category)) return [];
     $db = getDB();
     $stmt = $db->prepare("
-        SELECT b.*, u.name as owner_name 
+        SELECT b.*, u.name as owner_name, u.profile_pic as owner_avatar, u.hall as owner_hall
         FROM books b
         LEFT JOIN users u ON b.owner_id = u.id
         WHERE b.category = ? AND b.id != ? AND b.status = 'available'
@@ -255,12 +256,9 @@ $isOwner = $isLoggedIn && $currentUserId === $book['owner_id'];
 $hasRequested = $isLoggedIn && hasUserRequested($bookId, $currentUserId);
 $canBorrow = $book['status'] === 'available' && $isLoggedIn && !$isOwner && !$hasRequested;
 
-// Calculate average rating
-$avgRating = 0;
-if (!empty($reviews)) {
-    $totalRating = array_sum(array_column($reviews, 'rating'));
-    $avgRating = round($totalRating / count($reviews), 1);
-}
+// Get rating from DB columns
+$avgRating = number_format($book['rating'] ?? 0, 1);
+$ratingCount = $book['rating_count'] ?? 0;
 
 // Get cover image path - MAIN IMAGE
 $coverImage = getCoverImagePath($book['cover_image'] ?? '');
@@ -417,10 +415,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action']) && $_P
     
     $book['reviews'][] = $newReview;
     
+    // Calculate new average rating and count
+    $reviewCount = count($book['reviews']);
+    $totalRating = 0;
+    foreach ($book['reviews'] as $r) {
+        $totalRating += $r['rating'];
+    }
+    $newAvgRating = round($totalRating / $reviewCount, 2);
+    
     $db = getDB();
-    $stmt = $db->prepare("UPDATE books SET reviews = ?, updated_at = ? WHERE id = ?");
-    if ($stmt->execute([json_encode($book['reviews']), date('Y-m-d H:i:s'), $bookId])) {
-        echo json_encode(['success' => true, 'review' => $newReview]);
+    $stmt = $db->prepare("UPDATE books SET reviews = ?, rating = ?, rating_count = ?, updated_at = ? WHERE id = ?");
+    if ($stmt->execute([json_encode($book['reviews']), $newAvgRating, $reviewCount, date('Y-m-d H:i:s'), $bookId])) {
+        echo json_encode(['success' => true, 'review' => $newReview, 'new_rating' => $newAvgRating, 'new_count' => $reviewCount]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to save review to database']);
     }
@@ -964,7 +970,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action']) && $_P
                         <div class="meta-item">
                             <div class="meta-icon"><i class="fas fa-star"></i></div>
                             <span class="meta-label">Rating</span>
-                            <span class="meta-value"><?php echo $avgRating; ?> <span style="font-weight:400;opacity:0.6;font-size:0.8rem">(<?php echo count($reviews); ?>)</span></span>
+                            <span class="meta-value"><?php echo $avgRating; ?> <span style="font-weight:400;opacity:0.6;font-size:0.8rem">(<?php echo $ratingCount; ?>)</span></span>
                         </div>
                         <div class="meta-item">
                             <div class="meta-icon"><i class="fas fa-calendar"></i></div>
@@ -1197,7 +1203,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action']) && $_P
                 <i class="fas fa-layer-group"></i>
                 Related Books
             </h2>
-            <?php renderBookCardGrid($relatedBooks, ['gridClass' => 'book-grid']); ?>
+            <div class="hide-on-mobile">
+                <?php renderBookCardGrid($relatedBooks, ['gridClass' => 'book-grid']); ?>
+            </div>
+            <div class="show-on-mobile">
+                <?php renderBookCardList($relatedBooks); ?>
+            </div>
         </div>
     </div>
     <?php endif; ?>

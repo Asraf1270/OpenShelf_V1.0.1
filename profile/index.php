@@ -7,6 +7,7 @@
 session_start();
 include dirname(__DIR__) . '/includes/header.php';
 include dirname(__DIR__) . '/includes/BookCardGrid.php';
+include dirname(__DIR__) . '/includes/BookCardList.php';
 echo '<link rel="stylesheet" href="/assets/css/profile.css">';
 
 // Configuration
@@ -61,7 +62,7 @@ function loadUserData($userId) {
 function loadUserBooks($userId) {
     if (empty($userId)) return [];
     $db = getDB();
-    $stmt = $db->prepare("SELECT * FROM books WHERE owner_id = ?");
+    $stmt = $db->prepare("SELECT b.*, u.hall as owner_hall FROM books b LEFT JOIN users u ON b.owner_id = u.id WHERE b.owner_id = ?");
     $stmt->execute([$userId]);
     return $stmt->fetchAll();
 }
@@ -86,7 +87,8 @@ function getUserProfileData($userId, $ownedBooks) {
                 'author' => $r['book_author'],
                 'cover_image' => $r['book_cover'],
                 'status' => $r['status'],
-                'owner_name' => $r['owner_name']
+                'owner_name' => $r['owner_name'],
+                'owner_hall' => 'N/A Hall' // Would need additional join to get this properly
             ];
         }
         if ($r['owner_id'] === $userId) {
@@ -96,7 +98,8 @@ function getUserProfileData($userId, $ownedBooks) {
                 'author' => $r['book_author'],
                 'cover_image' => $r['book_cover'],
                 'status' => $r['status'],
-                'borrower_name' => $r['borrower_name']
+                'borrower_name' => $r['borrower_name'],
+                'owner_hall' => 'My Hall'
             ];
         }
     }
@@ -302,7 +305,12 @@ $showSensitiveInfo = $isOwnProfile; // Only owner can see sensitive info like ro
                 <p>No owned books to show.</p>
             </div>
         <?php else: ?>
-            <?php renderBookCardGrid($books, ['showOwner' => false]); ?>
+            <div id="desktop-view-wrapper" class="hide-on-mobile">
+                <?php renderBookCardGrid($books, ['showOwner' => false]); ?>
+            </div>
+            <div id="mobile-view-wrapper" class="show-on-mobile">
+                <?php renderBookCardList($books, ['showOwner' => false]); ?>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -313,11 +321,12 @@ $showSensitiveInfo = $isOwnProfile; // Only owner can see sensitive info like ro
                 <p>No borrowed books to show.</p>
             </div>
         <?php else: ?>
-            <?php renderBookCardGrid($borrowedBooks, [
-                'showOwner' => false,
-                'extraInfoKey' => 'owner_name',
-                'extraInfoLabel' => 'Borrowed from'
-            ]); ?>
+            <div id="desktop-view-wrapper-borrowed" class="hide-on-mobile">
+                <?php renderBookCardGrid($borrowedBooks, ['showOwner' => true, 'extraInfoKey' => 'owner_name', 'extraInfoLabel' => 'Borrowed from']); ?>
+            </div>
+            <div id="mobile-view-wrapper-borrowed" class="show-on-mobile">
+                <?php renderBookCardList($borrowedBooks, ['showOwner' => true, 'extraInfoKey' => 'owner_name', 'extraInfoLabel' => 'Borrowed from']); ?>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -328,11 +337,12 @@ $showSensitiveInfo = $isOwnProfile; // Only owner can see sensitive info like ro
                 <p>No books lent yet.</p>
             </div>
         <?php else: ?>
-            <?php renderBookCardGrid($lentBooks, [
-                'showOwner' => false,
-                'extraInfoKey' => 'borrower_name',
-                'extraInfoLabel' => 'Lent to'
-            ]); ?>
+            <div id="desktop-view-wrapper-lent" class="hide-on-mobile">
+                <?php renderBookCardGrid($lentBooks, ['showOwner' => true, 'extraInfoKey' => 'borrower_name', 'extraInfoLabel' => 'Lent to']); ?>
+            </div>
+            <div id="mobile-view-wrapper-lent" class="show-on-mobile">
+                <?php renderBookCardList($lentBooks, ['showOwner' => true, 'extraInfoKey' => 'borrower_name', 'extraInfoLabel' => 'Lent to']); ?>
+            </div>
         <?php endif; ?>
     </div>
 </div>

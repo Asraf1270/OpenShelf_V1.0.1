@@ -90,6 +90,29 @@ function renderBookCardGrid($books, $options = []) {
                 </h3>
                 <p class="book-author">By <?php echo htmlspecialchars($author); ?></p>
                 
+                <?php if (!empty($book['rating_count']) && $book['rating_count'] > 0): 
+                    $rating = $book['rating'] ?? 0;
+                    $fullStars = floor($rating);
+                    $hasHalfStar = ($rating - $fullStars) >= 0.5;
+                    $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
+                ?>
+                    <div class="book-rating" style="display: flex; align-items: center; gap: 0.2rem; margin-top: 0.35rem; font-size: 0.8rem; color: #f59e0b;">
+                        <div class="stars" style="display: flex; gap: 1px;">
+                            <?php for ($i = 0; $i < $fullStars; $i++): ?>
+                                <i class="fas fa-star"></i>
+                            <?php endfor; ?>
+                            <?php if ($hasHalfStar): ?>
+                                <i class="fas fa-star-half-alt"></i>
+                            <?php endif; ?>
+                            <?php for ($i = 0; $i < $emptyStars; $i++): ?>
+                                <i class="far fa-star"></i>
+                            <?php endfor; ?>
+                        </div>
+                        <span style="font-weight: 700; margin-left: 0.25rem;"><?php echo number_format($rating, 1); ?></span>
+                        <span style="color: var(--gray-500); font-weight: 400; font-size: 0.75rem;">(<?php echo $book['rating_count']; ?>)</span>
+                    </div>
+                <?php endif; ?>
+                
                 <?php if ($extraInfoKey && !empty($book[$extraInfoKey])): ?>
                     <p class="book-extra-info">
                         <?php echo htmlspecialchars($extraInfoLabel); ?>: 
