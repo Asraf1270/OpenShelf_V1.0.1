@@ -6,6 +6,8 @@
 ?>
     </main>
 
+    <?php include __DIR__ . '/Navbar.php'; ?>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-container">
