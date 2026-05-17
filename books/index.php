@@ -188,31 +188,6 @@ function toggleCategoryUrl($cat) {
             margin: 0 auto;
         }
 
-        /* Search Bar (sticky below the header) */
-        .search-bar-wrap {
-            background: var(--header-bg);
-            padding: 0.5rem 1rem;
-            border-bottom: 1px solid var(--header-border);
-            display: flex;
-            justify-content: center;
-            position: sticky;
-            top: 56px;
-            z-index: 995;
-            margin: 0;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            max-height: 80px;
-            overflow: hidden;
-        }
-
-        .search-bar-wrap.hidden {
-            transform: translateY(-100%);
-            opacity: 0;
-            max-height: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-            border-bottom-width: 0;
-        }
-
         /* Sticky Category/Filter Bar */
         .minimal-top-bar {
             background: var(--header-bg);
@@ -220,7 +195,7 @@ function toggleCategoryUrl($cat) {
             border-bottom: 1px solid var(--header-border);
             margin: 0;
             position: sticky;
-            top: 104px; /* Default: Header (56) + Search (48) */
+            top: 72px; /* Default: Header height */
             z-index: 990;
             display: flex;
             align-items: center;
@@ -238,85 +213,8 @@ function toggleCategoryUrl($cat) {
             border-top: 1px solid var(--header-border);
         }
 
-        body.header-hidden .search-bar-wrap {
-            transform: translateY(-150%);
-            opacity: 0;
-            pointer-events: none;
-        }
-
         .minimal-top-bar::-webkit-scrollbar {
             display: none;
-        }
-
-        .search-row {
-            width: 100%;
-            max-width: 720px;
-            display: flex;
-            justify-content: center;
-            position: relative;
-        }
-
-        .youtube-search {
-            display: flex;
-            align-items: center;
-            width: 100%;
-            background: var(--gray-100);
-            border: none;
-            border-radius: 10px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            padding: 2px 4px;
-        }
-
-        .youtube-search:focus-within {
-            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.15);
-            transform: translateY(-1px);
-        }
-
-        .search-input-wrapper {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            padding-left: 1.25rem;
-            position: relative;
-        }
-
-        .search-input-wrapper i {
-            color: var(--gray-400);
-            font-size: 1rem;
-            position: absolute;
-            left: 1.25rem;
-        }
-
-        .search-input {
-            flex: 1;
-            border: none;
-            background: transparent;
-            padding: 0.5rem 1rem 0.5rem 2.5rem;
-            font-size: 0.95rem;
-            outline: none;
-            color: var(--gray-800);
-            width: 100%;
-        }
-
-        .search-btn {
-            background: var(--primary);
-            border: none;
-            padding: 0.5rem 1.25rem;
-            cursor: pointer;
-            color: white;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .search-btn:hover {
-            background: var(--primary-dark);
-            transform: scale(1.02);
         }
 
         /* Category Pills (YouTube Chips) */
@@ -424,34 +322,6 @@ function toggleCategoryUrl($cat) {
     </style>
 
     <div class="books-main">
-    <!-- Search Bar (scrolls with page) -->
-    <div class="search-bar-wrap">
-        <div class="search-row">
-            <form method="GET" action="/books/" class="youtube-search">
-                <!-- Preserve categories & availability -->
-                <?php if (!empty($selectedCategories)): ?>
-                    <?php foreach ($selectedCategories as $cat): ?>
-                        <input type="hidden" name="categories[]" value="<?php echo htmlspecialchars($cat); ?>">
-                    <?php endforeach; ?>
-                <?php endif; ?>
-                <?php if (!empty($availability)): ?>
-                    <input type="hidden" name="availability" value="<?php echo htmlspecialchars($availability); ?>">
-                <?php endif; ?>
-
-                <div class="search-input-wrapper">
-                    <i class="fas fa-search"></i>
-                    <input type="text" name="search" id="searchInput" class="search-input" 
-                           placeholder="Search books, authors, publishers..." 
-                           value="<?php echo htmlspecialchars($search); ?>"
-                           autocomplete="off">
-                </div>
-                <button type="submit" class="search-btn">
-                    <span>Search</span>
-                </button>
-            </form>
-        </div>
-    </div>
-
     <!-- Sticky Category / Filter Bar -->
     <div class="minimal-top-bar">
         <!-- Category Row -->
@@ -641,7 +511,8 @@ function setupFilterListeners() {
             currentFilters.availability = '';
             
             // Update UI
-            document.getElementById('searchInput').value = '';
+            const hSearch = document.querySelector('.header-search-input');
+            if (hSearch) hSearch.value = '';
             document.querySelectorAll('.category-chip').forEach(c => {
                 c.classList.toggle('active', !c.dataset.category);
             });
@@ -682,8 +553,13 @@ function debounce(func, wait) {
 }
 
 function setupInstantSearch() {
-    const searchInput = document.getElementById('searchInput');
+    const searchInput = document.querySelector('.header-search-input');
     if (!searchInput) return;
+
+    // Pre-fill header search with current PHP search filter if set
+    if (currentFilters.search && searchInput.value === '') {
+        searchInput.value = currentFilters.search;
+    }
 
     const handleSearch = debounce(async (e) => {
         const query = e.target.value.trim();
@@ -696,12 +572,15 @@ function setupInstantSearch() {
     searchInput.addEventListener('input', handleSearch);
     
     // Prevent form submission to keep it AJAX
-    searchInput.closest('form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const query = searchInput.value.trim();
-        currentFilters.search = query;
-        refreshBooks();
-    });
+    const form = document.getElementById('headerSearchForm');
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = searchInput.value.trim();
+            currentFilters.search = query;
+            refreshBooks();
+        });
+    }
 }
 
 async function refreshBooks() {

@@ -744,6 +744,75 @@ if (!file_exists($fullAvatarPath) || $userAvatar === 'default-avatar.jpg') {
         .user-dropdown.show {
             animation: slideDown 0.2s ease;
         }
+        /* Header Search Form */
+        .header-search-form {
+            display: flex;
+            align-items: center;
+            background: transparent;
+            border-radius: 2rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .header-search-form.active {
+            background: var(--gray-100, #F1F5F9);
+            box-shadow: inset 0 0 0 1px var(--border);
+        }
+        
+        [data-theme="dark"] .header-search-form.active {
+            background: var(--surface-hover);
+        }
+
+        .header-search-input {
+            width: 0;
+            opacity: 0;
+            border: none;
+            background: transparent;
+            padding: 0;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+        }
+
+        .header-search-form.active .header-search-input {
+            width: 200px;
+            opacity: 1;
+            padding: 0.5rem 0.5rem 0.5rem 1rem;
+        }
+
+        .logo-full-img {
+            height: 45px;
+            display: block;
+            transition: opacity 0.2s ease;
+        }
+        
+        .logo-icon-img {
+            height: 40px;
+            display: none;
+            border-radius: 10px;
+        }
+
+        .header-container.search-active .logo-full-img {
+            display: none;
+        }
+        
+        .header-container.search-active .logo-icon-img {
+            display: block;
+        }
+
+        /* Hide other elements when search is active on mobile */
+        @media (max-width: 768px) {
+            .header-search-form.active .header-search-input {
+                width: calc(100vw - 140px);
+            }
+            .header-container.search-active .nav-desktop,
+            .header-container.search-active .auth-buttons,
+            .header-container.search-active .user-menu,
+            .header-container.search-active .notification-wrapper {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -752,7 +821,8 @@ if (!file_exists($fullAvatarPath) || $userAvatar === 'default-avatar.jpg') {
     <div class="header-container">
         <!-- Logo -->
         <a href="/" class="logo">
-            <img src="/assets/images/logo-full.svg" alt="OpenShelf" height="45">
+            <img src="/assets/images/logo-full.svg" alt="OpenShelf" class="logo-full-img">
+            <img src="/assets/images/logo-icon.svg" alt="OpenShelf" class="logo-icon-img">
         </a>
 
         <!-- Desktop Navigation -->
@@ -784,10 +854,13 @@ if (!file_exists($fullAvatarPath) || $userAvatar === 'default-avatar.jpg') {
 
         <!-- Right Section -->
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <!-- Theme Toggle -->
-            <button id="themeToggleBtn" class="notification-btn" title="Toggle Theme" style="display: inline-flex; align-items: center; justify-content: center;">
-                <i class="fas fa-moon"></i>
-            </button>
+            <!-- Header Search -->
+            <form action="/books/" method="GET" class="header-search-form" id="headerSearchForm">
+                <input type="text" name="search" class="header-search-input" placeholder="Search books..." autocomplete="off">
+                <button type="submit" class="notification-btn" id="headerSearchBtn" title="Search">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
             <!-- Notification Bell (Desktop) -->
             <?php if ($isLoggedIn): ?>
             <div class="notification-wrapper">
@@ -800,44 +873,8 @@ if (!file_exists($fullAvatarPath) || $userAvatar === 'default-avatar.jpg') {
             </div>
             <?php endif; ?>
 
-            <!-- User Menu / Auth -->
-            <?php if ($isLoggedIn): ?>
-            <div class="user-menu">
-                <button class="user-btn" id="userMenuBtn">
-                    <img src="<?php echo $avatarPath; ?>" 
-                         alt="<?php echo htmlspecialchars($userName); ?>" 
-                         class="user-avatar" 
-                         onerror="this.src='/assets/images/avatars/default.jpg'">
-                    <span class="user-name"><?php echo htmlspecialchars($userName); ?></span>
-                    <i class="fas fa-chevron-down" style="font-size: 0.75rem; color: var(--text-tertiary);"></i>
-                </button>
-                <div class="user-dropdown" id="userDropdown">
-                    <div class="dropdown-header">
-                        <div class="dropdown-user-name"><?php echo htmlspecialchars($userName); ?></div>
-                        <div class="dropdown-user-email"><?php echo htmlspecialchars($userEmail); ?></div>
-                    </div>
-                    <a href="/profile/" class="dropdown-item">
-                        <i class="fas fa-user"></i> My Profile
-                    </a>
-                    <a href="/add-book/" class="dropdown-item">
-                        <i class="fas fa-plus-circle"></i> Add Book
-                    </a>
-                    <a href="/requests/" class="dropdown-item">
-                        <i class="fas fa-exchange-alt"></i> My Requests
-                    </a>
-                    <a href="/my-borrowed/" class="dropdown-item">
-                        <i class="fas fa-book-reader"></i> My Borrowed
-                    </a>
-                    <a href="/edit-profile/" class="dropdown-item">
-                        <i class="fas fa-cog"></i> Settings
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="/logout.php" class="dropdown-item">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                </div>
-            </div>
-            <?php else: ?>
+            <!-- Auth Buttons (Desktop) -->
+            <?php if (!$isLoggedIn): ?>
             <div class="auth-buttons">
                 <a href="/login/" class="btn-login">Login</a>
                 <a href="/register/" class="btn-register">Register</a>
@@ -856,28 +893,6 @@ if (!file_exists($fullAvatarPath) || $userAvatar === 'default-avatar.jpg') {
 
 <!-- Mobile Menu -->
 <div class="mobile-menu" id="mobileMenu">
-    <div class="mobile-header">
-        <?php if ($isLoggedIn): ?>
-        <div class="mobile-user-info">
-            <img src="<?php echo $avatarPath; ?>" 
-                 alt="<?php echo htmlspecialchars($userName); ?>" 
-                 class="mobile-avatar" 
-                 onerror="this.src='/assets/images/avatars/default.jpg'">
-            <div>
-                <div class="mobile-user-name"><?php echo htmlspecialchars($userName); ?></div>
-                <div class="mobile-user-email"><?php echo htmlspecialchars($userEmail); ?></div>
-            </div>
-        </div>
-        <?php else: ?>
-        <div style="text-align: center;">
-            <div class="mobile-user-name">Welcome to OpenShelf</div>
-            <div style="margin-top: 1rem; display: flex; gap: 0.75rem; justify-content: center;">
-                <a href="/login/" style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 2rem; color: white; text-decoration: none;">Login</a>
-                <a href="/register/" style="background: white; padding: 0.5rem 1rem; border-radius: 2rem; color: #6366f1; text-decoration: none;">Register</a>
-            </div>
-        </div>
-        <?php endif; ?>
-    </div>
     
     <nav class="mobile-nav">
         <ul style="list-style: none;">
@@ -936,6 +951,18 @@ if (!file_exists($fullAvatarPath) || $userAvatar === 'default-avatar.jpg') {
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </a>
             </li>
+            <?php else: ?>
+            <div class="mobile-divider"></div>
+            <li class="mobile-nav-item">
+                <a href="/login/" class="mobile-nav-link" style="color: var(--primary); font-weight: 600;">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+            </li>
+            <li class="mobile-nav-item">
+                <a href="/register/" class="mobile-nav-link" style="color: var(--primary); font-weight: 600;">
+                    <i class="fas fa-user-plus"></i> Register
+                </a>
+            </li>
             <?php endif; ?>
             <div class="mobile-divider"></div>
             <li class="mobile-nav-item" id="pwaInstallItem" style="display: none;">
@@ -981,29 +1008,6 @@ if (!file_exists($fullAvatarPath) || $userAvatar === 'default-avatar.jpg') {
         });
     }
 
-    // User Dropdown
-    const userMenuBtn = document.getElementById('userMenuBtn');
-    const userDropdown = document.getElementById('userDropdown');
-
-    if (userMenuBtn && userDropdown) {
-        userMenuBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            userDropdown.classList.toggle('show');
-        });
-
-        document.addEventListener('click', function(e) {
-            if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-                userDropdown.classList.remove('show');
-            }
-        });
-    }
-
-    // Close dropdown on escape
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && userDropdown && userDropdown.classList.contains('show')) {
-            userDropdown.classList.remove('show');
-        }
-    });
 
     // Smart Scroll-to-Reveal Header
     let lastScrollTop = 0;
@@ -1039,31 +1043,51 @@ if (!file_exists($fullAvatarPath) || $userAvatar === 'default-avatar.jpg') {
         lastScrollTop = st;
     });
 
-    // Theme Toggle
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    const themeColorMeta = document.getElementById('themeColorMeta');
-    
-    function updateThemeMeta(theme) {
-        if (themeColorMeta) {
-            themeColorMeta.setAttribute('content', theme === 'dark' ? '#0f172a' : '#ffffff');
-        }
-    }
+    // Header Search Toggle
+    const headerSearchBtn = document.getElementById('headerSearchBtn');
+    const headerSearchForm = document.getElementById('headerSearchForm');
+    const headerContainer = document.querySelector('.header-container');
 
-    if (themeToggleBtn) {
-        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-        updateThemeMeta(currentTheme);
+    if (headerSearchBtn && headerSearchForm) {
+        const headerSearchInput = headerSearchForm.querySelector('.header-search-input');
         
-        if (currentTheme === 'dark') {
-            themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+        // Auto-expand if we are on books page
+        if (window.location.pathname === '/books/' || window.location.pathname === '/books/index.php') {
+            // Optional: headerSearchForm.classList.add('active');
+            // Optional: headerContainer.classList.add('search-active');
         }
         
-        themeToggleBtn.addEventListener('click', () => {
-            const theme = document.documentElement.getAttribute('data-theme');
-            const newTheme = theme === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            themeToggleBtn.innerHTML = newTheme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
-            updateThemeMeta(newTheme);
+        headerSearchBtn.addEventListener('click', function(e) {
+            if (!headerSearchForm.classList.contains('active')) {
+                e.preventDefault();
+                // If not on books page, redirect to books page
+                if (window.location.pathname !== '/books/' && window.location.pathname !== '/books/index.php') {
+                    window.location.href = '/books/';
+                    return;
+                }
+                
+                headerSearchForm.classList.add('active');
+                headerContainer.classList.add('search-active');
+                headerSearchInput.focus();
+            } else if (headerSearchInput.value.trim() === '') {
+                e.preventDefault();
+                headerSearchForm.classList.remove('active');
+                headerContainer.classList.remove('search-active');
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (headerSearchForm.classList.contains('active') && !headerSearchForm.contains(e.target)) {
+                headerSearchForm.classList.remove('active');
+                headerContainer.classList.remove('search-active');
+            }
+        });
+
+        headerSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                headerSearchForm.classList.remove('active');
+                headerContainer.classList.remove('search-active');
+            }
         });
     }
 </script>
