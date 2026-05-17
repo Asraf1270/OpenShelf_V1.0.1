@@ -20,7 +20,7 @@ require_once dirname(__DIR__) . '/includes/db.php';
 
 $viewUserId = $_GET['id'] ?? ($_SESSION['user_id'] ?? null);
 if (!$viewUserId) {
-    header('Location: /books/');
+    header('Location: /login/');
     exit;
 }
 

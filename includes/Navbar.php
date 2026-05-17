@@ -7,11 +7,14 @@
 $currentPath = $_SERVER['REQUEST_URI'] ?? '/';
 $currentPath = parse_url($currentPath, PHP_URL_PATH) ?: '/';
 
+$isLoggedIn = isset($_SESSION['user_id']);
+$profileLink = $isLoggedIn ? '/profile/' : '/login/';
+
 $homeActive = $currentPath === '/' || basename($currentPath) === 'index.php' || str_contains($currentPath, '/books');
 $requestsActive = str_contains($currentPath, '/requests');
 $addBookActive = str_contains($currentPath, '/add-book');
 $borrowedActive = str_contains($currentPath, '/my-borrowed');
-$profileActive = str_contains($currentPath, '/profile') || str_contains($currentPath, '/edit-profile');
+$profileActive = str_contains($currentPath, '/profile') || str_contains($currentPath, '/edit-profile') || (!$isLoggedIn && str_contains($currentPath, '/login'));
 ?>
 
 <div class="bottom-nav-container" id="bottomNavbar">
@@ -39,7 +42,7 @@ $profileActive = str_contains($currentPath, '/profile') || str_contains($current
             <a href="/my-borrowed/" class="nav-item <?php echo $borrowedActive ? 'active' : ''; ?>" aria-label="My Borrowed">
                 <i class="fas fa-book-reader"></i>
             </a>
-            <a href="/profile/" class="nav-item <?php echo $profileActive ? 'active' : ''; ?>" aria-label="Profile">
+            <a href="<?php echo $profileLink; ?>" class="nav-item <?php echo $profileActive ? 'active' : ''; ?>" aria-label="Profile">
                 <i class="fas fa-user"></i>
             </a>
         </div>
