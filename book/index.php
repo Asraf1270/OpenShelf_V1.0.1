@@ -234,6 +234,7 @@ function loadRelatedBooks($category, $excludeId, $limit = 4) {
 
 // Load detailed book data
 $book = loadDetailedBook($bookId);
+$pageTitle = $book['title'] ?? 'Book Detail';
 if (!$book) {
     header('Location: /books/');
     exit;
@@ -366,6 +367,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             
             // Refresh book data
             $book = loadDetailedBook($bookId);
+$pageTitle = $book['title'] ?? 'Book Detail';
         } else {
             $borrowError = 'Failed to send request';
         }
@@ -517,484 +519,512 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action']) && $_P
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title><?php echo htmlspecialchars($book['title']); ?> - OpenShelf</title>
-    <link rel="stylesheet" href="/assets/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+<?php include dirname(__DIR__) . '/includes/header.php'; ?>
 
-        :root {
-            --primary: #2C3E50;
-            --primary-light: rgba(44, 62, 80, 0.1);
-            --primary-dark: #1a252f;
-            --accent: #4C9F8A;
-            --bg: #F8F9FA;
-            --surface: hsla(0, 0%, 100%, 0.7);
-            --surface-solid: #ffffff;
-            --text-main: #0F172A;
-            --text-muted: #5A6C7D;
-            --border: #E2E8F0;
-            --glass-border: hsla(0, 0%, 100%, 0.4);
-            --shadow-premium: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
-            --radius-lg: 24px;
-            --radius-md: 16px;
-        }
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif; 
-            background: var(--bg); 
-            color: var(--text-main);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
+    :root {
+        --primary: #2C3E50;
+        --primary-light: rgba(44, 62, 80, 0.1);
+        --primary-dark: #1a252f;
+        --primary-rgb: 44, 62, 80;
+        --accent: #4C9F8A;
+        --bg: #F8F9FA;
+        --surface: hsla(0, 0%, 100%, 0.7);
+        --surface-solid: #ffffff;
+        --text-main: #0F172A;
+        --text-muted: #5A6C7D;
+        --border: #E2E8F0;
+        --glass-border: hsla(0, 0%, 100%, 0.4);
+        --shadow-premium: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+        --radius-lg: 24px;
+        --radius-md: 16px;
+    }
 
-        .book-detail { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            padding: 2rem 1.5rem; 
-            animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { 
+        font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif; 
+        background: var(--bg); 
+        color: var(--text-main);
+        line-height: 1.6;
+        overflow-x: hidden;
+        transition: background 0.3s, color 0.3s;
+    }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .book-detail { 
+        max-width: 1200px; 
+        margin: 0 auto; 
+        padding: 0.5rem 1.5rem 2rem 1.5rem; 
+        animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
 
-        /* Breadcrumb */
-        .breadcrumb {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 2rem;
-            padding: 0.5rem 0;
-        }
-        .breadcrumb a { 
-            color: var(--text-muted); 
-            text-decoration: none; 
-            transition: color 0.2s;
-        }
-        .breadcrumb a:hover { color: var(--primary); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Book Layout */
-        .book-layout { 
-            display: grid; 
-            grid-template-columns: 1fr; 
-            gap: 3rem; 
-            align-items: start;
-        }
-        @media (min-width: 992px) { 
-            .book-layout { grid-template-columns: 350px 1fr; } 
-        }
+    /* Centered Flat Book Cover Container & Wrapper */
+    .detail-cover-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 0.5rem; /* Reduced from 2rem to 0.5rem to pull sections tighter */
+    }
+    .detail-cover-wrapper {
+        position: relative;
+        width: 200px;
+        height: 280px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08), 0 3px 10px rgba(0, 0, 0, 0.04);
+        border: 1px solid var(--border);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .detail-cover-wrapper:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 5px 15px rgba(0, 0, 0, 0.06);
+    }
+    .detail-cover-flat {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    /* Minimal Availability Badge staying on top of the book cover */
+    .status-badge-minimal {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 4px 10px;
+        border-radius: 99px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        z-index: 5;
+    }
+    .status-badge-minimal.available { background: rgba(16, 185, 129, 0.9); color: white; }
+    .status-badge-minimal.reserved, .status-badge-minimal.borrowed { background: rgba(245, 158, 11, 0.9); color: white; }
+    .status-badge-minimal i { font-size: 6px; }
 
-        /* Cover Section */
-        .book-cover-section {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
+    /* Centered Single Column Layout */
+    .book-content-wrapper {
+        max-width: 850px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem; /* Reduced from 2.5rem to 1.5rem for tighter vertical flow */
+        margin-top: 1rem;
+    }
+
+    /* Title / Author */
+    .detail-book-title {
+        font-size: clamp(2.4rem, 5vw, 3.6rem);
+        font-weight: 800;
+        line-height: 1.15;
+        margin-bottom: 0.25rem; /* Reduced from 0.5rem to 0.25rem */
+        letter-spacing: -0.8px;
+        color: var(--text-main);
+        transition: color 0.3s;
+    }
+    .detail-book-author {
+        font-size: 1.25rem;
+        color: var(--primary);
+        font-weight: 500;
+        opacity: 0.9;
+        margin-bottom: 0.5rem; /* Reduced from 1rem to 0.5rem */
+    }
+
+    /* Meta Grid */
+    .meta-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.75rem; /* Reduced gap slightly */
+        margin-bottom: 0.25rem; /* Reduced margin */
+    }
+    .meta-item {
+        background: var(--surface-solid);
+        padding: 1rem 0.5rem; /* Reduced padding from 1.25rem 0.75rem */
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 0.4rem; /* Reduced gap slightly */
+        transition: all 0.3s;
+    }
+    .meta-item:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: var(--shadow-premium); }
+    .meta-icon {
+        width: 32px; /* Slightly more compact */
+        height: 32px;
+        background: rgba(76, 159, 138, 0.1);
+        color: var(--accent);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        transition: all 0.3s;
+    }
+    .meta-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .meta-value { font-weight: 700; font-size: 0.85rem; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Owner Card */
+    .detail-owner-card {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        background: var(--surface-solid);
+        padding: 1rem 1.25rem; /* Reduced padding slightly */
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+    }
+    .detail-owner-card:hover { 
+        border-color: var(--primary); 
+        box-shadow: var(--shadow-premium);
+        transform: scale(1.01);
+    }
+    .detail-owner-avatar-container { position: relative; }
+    .detail-owner-avatar-large {
+        width: 48px; /* Slightly more compact */
+        height: 48px;
+        border-radius: 14px;
+        object-fit: cover;
+        border: 2px solid var(--primary-light);
+    }
+    .detail-owner-name { font-weight: 700; font-size: 1rem; margin-bottom: 0.2rem; }
+    .detail-owner-details { display: flex; gap: 0.75rem; font-size: 0.75rem; color: var(--text-muted); }
+    .detail-owner-details i { color: var(--primary); opacity: 0.7; }
+
+    /* Action Buttons */
+    .action-group {
+        display: flex;
+        gap: 0.75rem; /* Reduced from 1rem to 0.75rem */
+        flex-wrap: wrap;
+    }
+    .btn {
+        padding: 0.85rem 1.5rem; /* Reduced padding from 0.95rem 1.75rem */
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        flex: 1;
+        min-width: 170px;
+    }
+    .btn-primary { 
+        background: var(--primary); 
+        color: white; 
+        box-shadow: 0 6px 15px -5px rgba(44, 62, 80, 0.3);
+    }
+    .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 10px 20px -7px rgba(44, 62, 80, 0.45); }
+    .btn-whatsapp { background: #25d366; color: white; }
+    .btn-whatsapp:hover { background: #1eb956; transform: translateY(-2px); }
+    .btn-outline { background: white; border: 2px solid var(--border); color: var(--text-main); transition: all 0.3s; }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: rgba(44, 62, 80, 0.02); }
+
+    /* Tabs Section */
+    .tabs-container {
+        background: var(--surface-solid);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        box-shadow: var(--shadow-premium);
+        transition: background 0.3s, border-color 0.3s;
+    }
+    .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        padding: 0 0.5rem; /* Reduced padding */
+        background: #fafafa;
+        overflow-x: auto;
+        scrollbar-width: none;
+        transition: background 0.3s, border-color 0.3s;
+    }
+    .tabs::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .tab {
+        padding: 1rem 1.25rem; /* Reduced from 1.25rem 1.5rem */
+        font-weight: 600;
+        color: var(--text-muted);
+        border: none;
+        background: none;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.3s;
+        white-space: nowrap;
+    }
+    .tab.active { color: var(--primary); }
+    .tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 20%;
+        right: 20%;
+        height: 3px;
+        background: var(--primary);
+        border-radius: 10px 10px 0 0;
+    }
+
+    .tab-content { padding: 1.5rem 1.25rem; display: none; animation: fadeIn 0.4s ease; } /* Reduced padding from 2.5rem 2rem */
+    .tab-content.active { display: block; }
+
+    /* Specific Content Styling */
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem; /* Reduced gap slightly */
+    }
+    .detail-item {
+        padding-bottom: 0.6rem; /* Reduced from 0.75rem */
+        border-bottom: 1px solid var(--border);
+        transition: border-color 0.3s;
+    }
+    .detail-item label { 
+        display: block; 
+        font-size: 0.75rem; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+        color: var(--text-muted); 
+        margin-bottom: 0.3rem; /* Reduced from 0.4rem */
+    }
+    .detail-item span { font-weight: 600; font-size: 0.9rem; }
+
+    /* Entries (Reviews/Comments) */
+    .entry-card {
+        display: flex;
+        gap: 1rem; /* Reduced from 1.25rem */
+        padding: 1.25rem 0; /* Reduced from 1.75rem */
+        border-bottom: 1px solid var(--border);
+        transition: border-color 0.3s;
+    }
+    .entry-avatar { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; } /* Slightly more compact */
+    .entry-content { flex: 1; }
+    .entry-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem; }
+    .entry-name { font-weight: 700; font-size: 0.95rem; }
+    .entry-date { font-size: 0.75rem; color: var(--text-muted); }
+    .entry-text { color: var(--text-main); opacity: 0.85; line-height: 1.6; }
+
+    .rating-display { color: #facc15; font-size: 0.8rem; margin-top: 0.2/rem; }
+
+    .form-dark {
+        background: #f8fafc;
+        padding: 1.25rem; /* Reduced padding from 1.75rem */
+        border-radius: var(--radius-md);
+        margin-bottom: 2rem; /* Reduced margin from 2.5rem */
+        border: 1px solid var(--border);
+        transition: background 0.3s, border-color 0.3s;
+    }
+    .form-control {
+        width: 100%;
+        padding: 0.85rem 1rem; /* Reduced from 1rem 1.25rem */
+        border-radius: 10px;
+        border: 2px solid var(--border);
+        font-family: inherit;
+        font-size: 0.9rem;
+        background: white;
+        transition: all 0.3s;
+    }
+    .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(44, 62, 80, 0.1); }
+    .btn-submit {
+        background: var(--primary);
+        color: white;
+        padding: 0.85rem 1.5rem;
+        border-radius: 10px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-submit:hover { background: var(--primary-dark); transform: translateY(-2px); }
+
+    /* Related Books Section */
+    .related-section {
+        margin-top: 2rem; /* Reduced from 3rem */
+        margin-bottom: 1.5rem; /* Reduced from 2.5rem */
+    }
+    .related-title {
+        font-size: 1.35rem; /* Slightly more compact */
+        font-weight: 800;
+        margin-bottom: 1rem; /* Reduced from 1.5rem */
+        letter-spacing: -0.3px;
+        color: var(--text-main);
+    }
+    
+    /* Owner Details Section container */
+    .owner-section {
+        margin-top: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .book-detail { padding: 0.5rem 0.75rem; } /* Reduced top padding */
+        .detail-book-title {
+            font-size: 1.8rem;
+            text-align: center;
+        }
+        .detail-book-author {
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 1rem;
         }
         
-        .cover-wrapper {
-            position: relative;
-            aspect-ratio: 3 / 4.5;
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
-            background: #fff;
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .cover-wrapper:hover { transform: scale(1.02); }
-
-        .book-cover-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .status-badge {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            padding: 0.6rem 1.2rem;
-            border-radius: 99px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            backdrop-filter: blur(12px);
-            z-index: 2;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .status-badge.available { background: rgba(16, 185, 129, 0.9); color: white; }
-        .status-badge.reserved, .status-badge.borrowed { background: rgba(245, 158, 11, 0.9); color: white; }
-
-        /* Info Section */
-        .book-info-section {
-            padding: 1rem 0;
-        }
-
-        .book-header { margin-bottom: 2.5rem; }
-        .book-title {
-            font-size: clamp(2rem, 5vw, 3.2rem);
-            font-weight: 800;
-            line-height: 1.1;
-            margin-bottom: 0.5rem;
-            letter-spacing: -1px;
-            color: #1a1a1a;
-        }
-        .book-author {
-            font-size: 1.35rem;
-            color: var(--primary);
-            font-weight: 500;
-            opacity: 0.9;
-        }
-
-        /* Meta Grid */
+        /* Meta Grid 1 Row Minimal for Mobile */
         .meta-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2.5rem;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.35rem; /* Tighter gap */
+            margin-bottom: 1.25rem; /* Reduced */
         }
         .meta-item {
-            background: var(--surface-solid);
-            padding: 1.25rem;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            transition: all 0.3s;
-        }
-        .meta-item:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: var(--shadow-premium); }
-        .meta-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--primary-light);
-            color: var(--primary);
+            padding: 0.5rem 0.2rem; /* Tighter padding */
             border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-        }
-        .meta-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-        .meta-value { font-weight: 600; font-size: 0.95rem; }
-
-        /* Owner Card */
-        .owner-card {
-            display: flex;
-            align-items: center;
-            gap: 1.25rem;
+            gap: 0.2rem;
             background: var(--surface-solid);
-            padding: 1.25rem;
-            border-radius: var(--radius-md);
             border: 1px solid var(--border);
-            text-decoration: none;
-            color: inherit;
-            margin-bottom: 2.5rem;
-            transition: all 0.3s ease;
         }
-        .owner-card:hover { 
-            border-color: var(--primary); 
-            box-shadow: var(--shadow-premium);
-            transform: scale(1.01);
+        .meta-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 0.7rem;
+            border-radius: 6px;
         }
-        .owner-avatar-container { position: relative; }
-        .owner-avatar-large {
-            width: 60px;
-            height: 60px;
-            border-radius: 18px;
-            object-fit: cover;
-            border: 2px solid var(--primary-light);
+        .meta-label {
+            font-size: 0.5rem;
+            letter-spacing: 0.2px;
         }
-        .owner-name { font-weight: 700; font-size: 1.1rem; margin-bottom: 0.25rem; }
-        .owner-details { display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-muted); }
-        .owner-details i { color: var(--primary); opacity: 0.7; }
-
-        /* Action Buttons */
+        .meta-value {
+            font-size: 0.65rem;
+        }
+        
         .action-group {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 0.6rem; /* Tighter gap */
+            width: 100%;
         }
         .btn {
-            padding: 1rem 2rem;
-            border-radius: var(--radius-md);
-            font-weight: 600;
-            font-size: 1rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            flex: 1;
-            min-width: 200px;
+            width: 100%;
+            padding: 0.8rem 1.25rem;
+            font-size: 0.9rem;
         }
-        .btn-primary { 
-            background: var(--primary); 
-            color: white; 
-            box-shadow: 0 10px 20px -5px rgba(124, 58, 237, 0.3);
-        }
-        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: 0 15px 30px -10px rgba(124, 58, 237, 0.4); }
-        .btn-whatsapp { background: #25d366; color: white; }
-        .btn-whatsapp:hover { background: #1eb956; transform: translateY(-2px); }
-        .btn-outline { background: white; border: 2px solid var(--border); color: var(--text-main); }
-        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
-
-        /* Tabs Section */
-        .tabs-container {
-            margin-top: 4rem;
-            background: var(--surface-solid);
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--border);
-            overflow: hidden;
-            box-shadow: var(--shadow-premium);
-        }
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid var(--border);
-            padding: 0 1rem;
-            background: #fafafa;
+        .detail-owner-card {
+            padding: 0.85rem; /* Tighter padding */
         }
         .tab {
-            padding: 1.5rem 2rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            border: none;
-            background: none;
-            cursor: pointer;
-            position: relative;
-            transition: all 0.3s;
+            padding: 0.85rem 0.6rem; /* Tighter tab padding */
+            font-size: 0.85rem;
         }
-        .tab.active { color: var(--primary); }
-        .tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 20%;
-            right: 20%;
-            height: 3px;
-            background: var(--primary);
-            border-radius: 10px 10px 0 0;
+        .tab-content {
+            padding: 1.25rem 0.6rem; /* Tighter content padding */
         }
+    }
 
-        .tab-content { padding: 3rem; display: none; animation: fadeIn 0.4s ease; }
-        .tab-content.active { display: block; }
+    /* Dark Mode Overrides */
+    :root[data-theme="dark"] {
+        --bg: #0f172a;
+        --surface: hsla(215, 28%, 17%, 0.7);
+        --surface-solid: #1e293b;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --border: #334155;
+        --glass-border: hsla(215, 28%, 17%, 0.4);
+    }
+    [data-theme="dark"] .detail-book-title { color: #f8fafc; }
+    [data-theme="dark"] .cover-wrapper { background: #0f172a; }
+    [data-theme="dark"] .meta-icon { background: #0f172a; }
+    [data-theme="dark"] .btn-outline { background: #1e293b; border-color: #334155; color: #f8fafc; }
+    [data-theme="dark"] .btn-outline:hover { background: #334155; }
+    [data-theme="dark"] .tabs { background: #1e293b; border-color: #334155; }
+    [data-theme="dark"] .form-dark { background: #1e293b; }
+    [data-theme="dark"] .form-control { background: #0f172a; border-color: #334155; color: #f8fafc; }
+    [data-theme="dark"] .modal-card { background: #1e293b; }
+    [data-theme="dark"] .entry-text { color: #cbd5e1; }
+</style>
 
-        /* Specific Content Styling */
-        .detail-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-        }
-        .detail-item {
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-        .detail-item label { 
-            display: block; 
-            font-size: 0.75rem; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-            color: var(--text-muted); 
-            margin-bottom: 0.4rem;
-        }
-        .detail-item span { font-weight: 600; font-size: 1rem; }
+<div class="book-detail">
 
-        /* Entries (Reviews/Comments) */
-        .entry-card {
-            display: flex;
-            gap: 1.5rem;
-            padding: 2rem 0;
-            border-bottom: 1px solid var(--border);
-        }
-        .entry-avatar { width: 48px; height: 48px; border-radius: 14px; object-fit: cover; }
-        .entry-content { flex: 1; }
-        .entry-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
-        .entry-name { font-weight: 700; font-size: 1.05rem; }
-        .entry-date { font-size: 0.8rem; color: var(--text-muted); }
-        .entry-text { color: hsl(215, 16%, 30%); line-height: 1.7; }
-
-        .rating-display { color: #facc15; font-size: 0.9rem; margin-top: 0.25rem; }
-
-        .form-dark {
-            background: #f8fafc;
-            padding: 2rem;
-            border-radius: var(--radius-md);
-            margin-bottom: 3rem;
-            border: 1px solid var(--border);
-        }
-        .form-control {
-            width: 100%;
-            padding: 1.25rem;
-            border-radius: 12px;
-            border: 2px solid var(--border);
-            font-family: inherit;
-            font-size: 1rem;
-            transition: all 0.3s;
-            background: white;
-        }
-        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-light); }
-
-        /* Modal */
-        .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(8px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            padding: 1rem;
-        }
-        .modal.active { display: flex; animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .modal-card {
-            background: white;
-            width: 100%;
-            max-width: 500px;
-            border-radius: var(--radius-lg);
-            padding: 2.5rem;
-            box-shadow: 0 40px 100px -20px rgba(0,0,0,0.2);
-        }
-
-        @media (max-width: 768px) {
-            .book-detail { padding: 1.5rem 1rem; }
-            .action-group { flex-direction: column; }
-            .btn { width: 100%; }
-            .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; font-size: 0.9rem; }
-            .tab { padding: 1.25rem 1rem; white-space: nowrap; }
-            .tab-content { padding: 2rem 1rem; }
-            .book-title { font-size: 2.2rem; }
-            .meta-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        /* Dark Mode Overrides */
-        :root[data-theme="dark"] {
-            --bg: #0f172a;
-            --surface: hsla(215, 28%, 17%, 0.7);
-            --surface-solid: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
-            --glass-border: hsla(215, 28%, 17%, 0.4);
-        }
-        [data-theme="dark"] .book-title { color: #f8fafc; }
-        [data-theme="dark"] .cover-wrapper { background: #0f172a; }
-        [data-theme="dark"] .meta-icon { background: #0f172a; }
-        [data-theme="dark"] .btn-outline { background: #1e293b; border-color: #334155; color: #f8fafc; }
-        [data-theme="dark"] .tabs { background: #0f172a; border-color: #334155; }
-        [data-theme="dark"] .form-dark { background: #1e293b; }
-        [data-theme="dark"] .form-control { background: #0f172a; border-color: #334155; color: #f8fafc; }
-        [data-theme="dark"] .modal-card { background: #1e293b; }
-        [data-theme="dark"] .entry-text { color: #cbd5e1; }
-
-        .duration-select {
-            appearance: none;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2364748b%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22%3E%3C/path%3E%3C/svg%3E');
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1em;
-        }
-
-        /* Related Books Section */
-        .related-section {
-            margin-top: 3rem;
-            margin-bottom: 2.5rem;
-        }
-        .related-title {
-            font-size: 1.6rem;
-            font-weight: 800;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .related-title i { color: var(--primary); }
-    </style>
-</head>
-<body>
-    <?php include dirname(__DIR__) . '/includes/header.php'; ?>
-    
-    <main>
-        <div class="book-detail">
-            <!-- Breadcrumb -->
-            <div class="breadcrumb">
-                <a href="/">Home</a> <i class="fas fa-chevron-right" style="font-size:0.7rem;opacity:0.5"></i> 
-                <a href="/books/">Books</a> <i class="fas fa-chevron-right" style="font-size:0.7rem;opacity:0.5"></i> 
-                <span style="color:var(--text-primary);font-weight:500"><?php echo htmlspecialchars($book['title']); ?></span>
-            </div>
             
             <?php if ($borrowMessage): ?>
-                <div class="alert alert-success"><?php echo $borrowMessage; ?></div>
+                <div class="alert alert-success" style="margin-bottom: 2rem; padding: 1rem; border-radius: var(--radius-md);"><?php echo $borrowMessage; ?></div>
             <?php endif; ?>
             <?php if ($borrowError): ?>
-                <div class="alert alert-danger"><?php echo $borrowError; ?></div>
+                <div class="alert alert-danger" style="margin-bottom: 2rem; padding: 1rem; border-radius: var(--radius-md);"><?php echo $borrowError; ?></div>
             <?php endif; ?>
             
-            <div class="book-layout">
-                <!-- Cover Section - MAIN IMAGE -->
-                <div class="book-cover-section">
-                    <div class="cover-wrapper">
+            <!-- Immersive Layout Centered Content Wrapper -->
+            <div class="book-content-wrapper">
+                
+                <!-- Centered Flat Book Cover with Minimal Status Badge -->
+                <div class="detail-cover-container">
+                    <div class="detail-cover-wrapper">
                         <img src="<?php echo $coverImage; ?>" 
-                             alt="<?php echo htmlspecialchars($book['title']); ?>" 
-                             class="book-cover-image"
+                             alt="<?php echo htmlspecialchars($book['title']); ?>"
+                             class="detail-cover-flat"
                              onerror="this.src='/assets/images/default-book-cover.jpg'">
-                    </div>
-                    <div class="status-badge <?php echo $book['status']; ?>">
-                        <i class="fas fa-circle" style="font-size:10px"></i>
-                        <?php echo ucfirst($book['status']); ?>
+                        
+                        <!-- Minimal Availability Badge staying on top of the book cover -->
+                        <span class="status-badge-minimal <?php echo $book['status']; ?>">
+                            <i class="fas fa-circle"></i>
+                            <?php echo ucfirst($book['status']); ?>
+                        </span>
                     </div>
                 </div>
                 
-                <!-- Info Section -->
-                <div class="book-info-section">
-                    <h1 class="book-title"><?php echo htmlspecialchars($book['title']); ?></h1>
-                    <div class="book-author">by <?php echo htmlspecialchars($book['author']); ?></div>
-                    
-                    <div class="meta-grid">
-                        <div class="meta-item">
-                            <div class="meta-icon"><i class="fas fa-tag"></i></div>
-                            <span class="meta-label">Category</span>
-                            <span class="meta-value"><?php echo htmlspecialchars($book['category'] ?? 'General'); ?></span>
-                        </div>
-                        <div class="meta-item">
-                            <div class="meta-icon"><i class="fas fa-star"></i></div>
-                            <span class="meta-label">Rating</span>
-                            <span class="meta-value"><?php echo $avgRating; ?> <span style="font-weight:400;opacity:0.6;font-size:0.8rem">(<?php echo $ratingCount; ?>)</span></span>
-                        </div>
-                        <div class="meta-item">
-                            <div class="meta-icon"><i class="fas fa-calendar"></i></div>
-                            <span class="meta-label">Added</span>
-                            <span class="meta-value"><?php echo date('M j, Y', strtotime($book['created_at'])); ?></span>
-                        </div>
-                        <div class="meta-item">
-                            <div class="meta-icon"><i class="fas fa-eye"></i></div>
-                            <span class="meta-label">Views</span>
-                            <span class="meta-value"><?php echo number_format($book['views'] ?? 0); ?></span>
-                        </div>
+                <!-- Title & Author -->
+                <div class="book-header-section">
+                    <h1 class="detail-book-title"><?php echo htmlspecialchars($book['title']); ?></h1>
+                    <div class="detail-book-author">by <?php echo htmlspecialchars($book['author']); ?></div>
+                </div>
+                
+                <!-- Meta Grid -->
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <div class="meta-icon"><i class="fas fa-tag"></i></div>
+                        <span class="meta-label">Category</span>
+                        <span class="meta-value"><?php echo htmlspecialchars($book['category'] ?? 'General'); ?></span>
                     </div>
-                    
-                    <!-- Owner Card -->
-                    <a href="/profile/?id=<?php echo $book['owner_id']; ?>" class="owner-card">
-                        <div class="owner-avatar-container">
+                    <div class="meta-item">
+                        <div class="meta-icon"><i class="fas fa-star"></i></div>
+                        <span class="meta-label">Rating</span>
+                        <span class="meta-value"><?php echo $avgRating; ?> <span style="font-weight:400;opacity:0.6;font-size:0.8rem">(<?php echo $ratingCount; ?>)</span></span>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-icon"><i class="fas fa-calendar"></i></div>
+                        <span class="meta-label">Added</span>
+                        <span class="meta-value"><?php echo date('M j, Y', strtotime($book['created_at'])); ?></span>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-icon"><i class="fas fa-eye"></i></div>
+                        <span class="meta-label">Views</span>
+                        <span class="meta-value"><?php echo number_format($book['views'] ?? 0); ?></span>
+                    </div>
+                </div>
+
+                <!-- 1. Owner Profile Section -->
+                <div class="owner-section">
+                    <a href="/profile/?id=<?php echo $book['owner_id']; ?>" class="detail-owner-card">
+                        <div class="detail-owner-avatar-container">
                             <img src="/uploads/profile/<?php echo htmlspecialchars($owner['personal_info']['profile_pic'] ?? 'default-avatar.jpg'); ?>" 
-                                 class="owner-avatar-large" 
+                                 class="detail-owner-avatar-large" 
                                  alt="<?php echo htmlspecialchars($owner['personal_info']['name'] ?? 'Owner'); ?>"
                                  onerror="this.src='/assets/images/avatars/default.jpg'">
                         </div>
                         <div style="flex:1">
-                            <div class="owner-name"><?php echo htmlspecialchars($owner['personal_info']['name'] ?? 'Unknown Owner'); ?></div>
-                            <div class="owner-details">
+                            <div class="detail-owner-name"><?php echo htmlspecialchars($owner['personal_info']['name'] ?? 'Unknown Owner'); ?></div>
+                            <div class="detail-owner-details">
                                 <span><i class="fas fa-door-open"></i> <?php echo htmlspecialchars($owner['personal_info']['room_number'] ?? 'N/A'); ?></span>
                                 <span><i class="fas fa-building"></i> <?php echo htmlspecialchars($owner['personal_info']['department'] ?? 'N/A'); ?></span>
                             </div>
@@ -1003,14 +1033,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action']) && $_P
                             <i class="fas fa-chevron-right"></i>
                         </div>
                     </a>
-                    
+                </div>
+
+                <!-- 2. Action Buttons -->
+                <div class="action-section">
                     <div class="action-group">
                         <?php if ($isOwner): ?>
                             <a href="/edit-book/?id=<?php echo $bookId; ?>" class="btn btn-primary">
                                 <i class="fas fa-edit"></i> Edit Listing
                             </a>
                             <button onclick="shareBook()" class="btn btn-outline">
-                                <i class="fas fa-share-alt"></i> Share
+                                <i class="fas fa-share-alt"></i> Share Listing
                             </button>
                         <?php elseif ($canBorrow): ?>
                             <button onclick="showBorrowModal()" class="btn btn-primary">
@@ -1022,7 +1055,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action']) && $_P
                                 </a>
                             <?php endif; ?>
                         <?php elseif ($hasRequested): ?>
-                            <button class="btn btn-secondary" disabled style="background:#f1f5f9; color:#94a3b8; border:1px solid #e2e8f0;">
+                            <button class="btn btn-secondary" disabled style="background:#f1f5f9; color:#94a3b8; border:1px solid #e2e8f0; cursor: not-allowed;">
                                 <i class="fas fa-clock"></i> Request Pending
                             </button>
                             <a href="/requests/" class="btn btn-outline">Manage Requests</a>
@@ -1031,135 +1064,135 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action']) && $_P
                                 Join to Borrow
                             </a>
                         <?php else: ?>
-                            <button class="btn btn-secondary" disabled>
+                            <button class="btn btn-secondary" disabled style="cursor: not-allowed;">
                                 <i class="fas fa-lock"></i> Currently Unavailable
                             </button>
                         <?php endif; ?>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Tabs -->
-            <div class="tabs-container">
-                <div class="tabs">
-                    <button class="tab active" data-tab="description" onclick="switchTab('description')">Description</button>
-                    <button class="tab" data-tab="details" onclick="switchTab('details')">Details</button>
-                    <button class="tab" data-tab="reviews" onclick="switchTab('reviews')">Reviews <span style="font-size:0.85rem;opacity:0.6">(<?php echo count($reviews); ?>)</span></button>
-                    <button class="tab" data-tab="comments" onclick="switchTab('comments')">Comments <span style="font-size:0.85rem;opacity:0.6">(<?php echo count($comments); ?>)</span></button>
-                    <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
-                </div>
-                
-                <!-- Description -->
-                <div id="description-tab" class="tab-content active">
-                    <p style="font-size:1.05rem;line-height:1.7;color:var(--text-secondary);white-space:pre-line">
-                        <?php echo nl2br(htmlspecialchars($book['description'] ?? 'No description available.')); ?>
-                    </p>
-                </div>
-                
-                <!-- Details -->
-                <div id="details-tab" class="tab-content">
-                    <div class="detail-grid">
-                        <div class="detail-item"><label>ISBN</label><span><?php echo htmlspecialchars($book['isbn'] ?? 'N/A'); ?></span></div>
-                        <div class="detail-item"><label>Publisher</label><span><?php echo htmlspecialchars($book['publisher'] ?? 'N/A'); ?></span></div>
-                        <div class="detail-item"><label>Year</label><span><?php echo htmlspecialchars($book['publication_year'] ?? 'N/A'); ?></span></div>
-                        <div class="detail-item"><label>Pages</label><span><?php echo htmlspecialchars($book['pages'] ?? 'N/A'); ?></span></div>
-                        <div class="detail-item"><label>Language</label><span><?php echo htmlspecialchars($book['language'] ?? 'English'); ?></span></div>
-                        <div class="detail-item"><label>Condition</label><span><?php echo htmlspecialchars($book['condition'] ?? 'Good'); ?></span></div>
+
+                <!-- 3. The Tab-Container -->
+                <div class="tabs-container">
+                    <div class="tabs">
+                        <button class="tab active" data-tab="description" onclick="switchTab('description')">Description</button>
+                        <button class="tab" data-tab="details" onclick="switchTab('details')">Details</button>
+                        <button class="tab" data-tab="reviews" onclick="switchTab('reviews')">Reviews <span style="font-size:0.85rem;opacity:0.6">(<?php echo count($reviews); ?>)</span></button>
+                        <button class="tab" data-tab="comments" onclick="switchTab('comments')">Comments <span style="font-size:0.85rem;opacity:0.6">(<?php echo count($comments); ?>)</span></button>
+                        <button class="tab" data-tab="history" onclick="switchTab('history')">History</button>
                     </div>
-                </div>
-                
-                <!-- Reviews -->
-                <div id="reviews-tab" class="tab-content">
-                    <?php if ($isLoggedIn && !$isOwner): ?>
-                        <div class="form-dark">
-                            <h4 style="margin-bottom:1rem;font-weight:700">Write a Review</h4>
-                            <div class="rating-stars" id="ratingStarsInput" style="margin-bottom:1.5rem">
-                                <i class="far fa-star" data-rating="1"></i>
-                                <i class="far fa-star" data-rating="2"></i>
-                                <i class="far fa-star" data-rating="3"></i>
-                                <i class="far fa-star" data-rating="4"></i>
-                                <i class="far fa-star" data-rating="5"></i>
-                            </div>
-                            <textarea id="reviewText" class="form-control" rows="4" placeholder="What did you think of the book?"></textarea>
-                            <button onclick="submitReview()" class="btn btn-primary" style="margin-top:1.5rem;max-width:220px">Submit Review</button>
-                        </div>
-                    <?php endif; ?>
                     
-                    <?php if (empty($reviews)): ?>
-                        <div class="empty-state"><i class="far fa-star"></i><p>No reviews yet. Be the first to share your thoughts!</p></div>
-                    <?php else: foreach ($reviews as $review): $reviewer = loadUserData($review['user_id']); ?>
-                        <div class="entry-card">
-                            <img src="/uploads/profile/<?php echo htmlspecialchars($reviewer['personal_info']['profile_pic'] ?? 'default-avatar.jpg'); ?>" class="entry-avatar">
-                            <div class="entry-content">
-                                <div class="entry-header">
-                                    <div>
-                                        <div class="entry-name"><?php echo htmlspecialchars($review['user_name']); ?></div>
-                                        <div class="rating-display">
-                                            <?php for($i=1; $i<=5; $i++): ?>
-                                                <i class="<?php echo ($i <= $review['rating']) ? 'fas fa-star' : 'far fa-star'; ?>"></i>
-                                            <?php endfor; ?>
+                    <!-- Description -->
+                    <div id="description-tab" class="tab-content active">
+                        <p style="font-size:1.05rem;line-height:1.75;color:var(--text-main);opacity:0.95;white-space:pre-line">
+                            <?php echo nl2br(htmlspecialchars($book['description'] ?? 'No description available.')); ?>
+                        </p>
+                    </div>
+                    
+                    <!-- Details -->
+                    <div id="details-tab" class="tab-content">
+                        <div class="detail-grid">
+                            <div class="detail-item"><label>ISBN</label><span><?php echo htmlspecialchars($book['isbn'] ?? 'N/A'); ?></span></div>
+                            <div class="detail-item"><label>Publisher</label><span><?php echo htmlspecialchars($book['publisher'] ?? 'N/A'); ?></span></div>
+                            <div class="detail-item"><label>Year</label><span><?php echo htmlspecialchars($book['publication_year'] ?? 'N/A'); ?></span></div>
+                            <div class="detail-item"><label>Pages</label><span><?php echo htmlspecialchars($book['pages'] ?? 'N/A'); ?></span></div>
+                            <div class="detail-item"><label>Language</label><span><?php echo htmlspecialchars($book['language'] ?? 'English'); ?></span></div>
+                            <div class="detail-item"><label>Condition</label><span><?php echo htmlspecialchars($book['condition'] ?? 'Good'); ?></span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Reviews -->
+                    <div id="reviews-tab" class="tab-content">
+                        <?php if ($isLoggedIn && !$isOwner): ?>
+                            <div class="form-dark">
+                                <h4 style="margin-bottom:1rem;font-weight:700">Write a Review</h4>
+                                <div class="rating-stars" id="ratingStarsInput" style="margin-bottom:1.5rem">
+                                    <i class="far fa-star" data-rating="1"></i>
+                                    <i class="far fa-star" data-rating="2"></i>
+                                    <i class="far fa-star" data-rating="3"></i>
+                                    <i class="far fa-star" data-rating="4"></i>
+                                    <i class="far fa-star" data-rating="5"></i>
+                                </div>
+                                <textarea id="reviewText" class="form-control" rows="4" placeholder="What did you think of the book?"></textarea>
+                                <button onclick="submitReview()" class="btn btn-primary" style="margin-top:1.5rem;max-width:220px">Submit Review</button>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if (empty($reviews)): ?>
+                            <div class="empty-state"><i class="far fa-star"></i><p>No reviews yet. Be the first to share your thoughts!</p></div>
+                        <?php else: foreach ($reviews as $review): $reviewer = loadUserData($review['user_id']); ?>
+                            <div class="entry-card">
+                                <img src="/uploads/profile/<?php echo htmlspecialchars($reviewer['personal_info']['profile_pic'] ?? 'default-avatar.jpg'); ?>" class="entry-avatar">
+                                <div class="entry-content">
+                                    <div class="entry-header">
+                                        <div>
+                                            <div class="entry-name"><?php echo htmlspecialchars($review['user_name']); ?></div>
+                                            <div class="rating-display">
+                                                <?php for($i=1; $i<=5; $i++): ?>
+                                                    <i class="<?php echo ($i <= $review['rating']) ? 'fas fa-star' : 'far fa-star'; ?>"></i>
+                                                <?php endfor; ?>
+                                            </div>
                                         </div>
+                                        <div class="entry-date"><?php echo formatDate($review['created_at']); ?></div>
                                     </div>
-                                    <div class="entry-date"><?php echo formatDate($review['created_at']); ?></div>
+                                    <p class="entry-text"><?php echo nl2br(htmlspecialchars($review['review_text'])); ?></p>
                                 </div>
-                                <p class="entry-text"><?php echo nl2br(htmlspecialchars($review['review_text'])); ?></p>
                             </div>
-                        </div>
-                    <?php endforeach; endif; ?>
-                </div>
-                
-                <!-- Comments -->
-                <div id="comments-tab" class="tab-content">
-                    <?php if ($isLoggedIn): ?>
-                        <div class="form-dark">
-                            <h4 style="margin-bottom:1rem;font-weight:700">Add a Comment</h4>
-                            <textarea id="commentText" class="form-control" rows="3" placeholder="Ask a question or share a thought..."></textarea>
-                            <button onclick="submitComment()" class="btn btn-primary" style="margin-top:1.5rem;max-width:180px">Post Comment</button>
-                        </div>
-                    <?php endif; ?>
+                        <?php endforeach; endif; ?>
+                    </div>
                     
-                    <?php if (empty($comments)): ?>
-                        <div class="empty-state"><i class="far fa-comments"></i><p>No comments yet. Start the conversation!</p></div>
-                    <?php else: foreach ($comments as $comment): 
-                        $commenter = loadUserData($comment['user_id']); 
-                        $userLiked = $isLoggedIn && in_array($currentUserId, $comment['likes'] ?? []);
-                    ?>
-                        <div class="entry-card">
-                            <img src="/uploads/profile/<?php echo htmlspecialchars($commenter['personal_info']['profile_pic'] ?? 'default-avatar.jpg'); ?>" class="entry-avatar">
-                            <div class="entry-content">
-                                <div class="entry-header">
-                                    <span class="entry-name"><?php echo htmlspecialchars($comment['user_name']); ?></span>
-                                    <span class="entry-date"><?php echo formatDate($comment['created_at']); ?></span>
-                                </div>
-                                <p class="entry-text" style="margin-bottom:1rem"><?php echo nl2br(htmlspecialchars($comment['comment_text'])); ?></p>
-                                <button onclick="likeComment('<?php echo $comment['id']; ?>', this)" class="like-btn <?php echo $userLiked ? 'active' : ''; ?>" style="background:var(--bg);padding:0.5rem 1rem;border-radius:10px;display:inline-flex;align-items:center;gap:0.5rem;border:none;cursor:pointer;transition:all 0.2s">
-                                    <i class="fas fa-heart"></i> <span class="like-count" style="font-weight:600"><?php echo count($comment['likes'] ?? []); ?></span>
-                                </button>
+                    <!-- Comments -->
+                    <div id="comments-tab" class="tab-content">
+                        <?php if ($isLoggedIn): ?>
+                            <div class="form-dark">
+                                <h4 style="margin-bottom:1rem;font-weight:700">Add a Comment</h4>
+                                <textarea id="commentText" class="form-control" rows="3" placeholder="Ask a question or share a thought..."></textarea>
+                                <button onclick="submitComment()" class="btn btn-primary" style="margin-top:1.5rem;max-width:180px">Post Comment</button>
                             </div>
-                        </div>
-                    <?php endforeach; endif; ?>
-                </div>
-                
-                <!-- History -->
-                <div id="history-tab" class="tab-content">
-                    <?php if (empty($borrowRequests)): ?>
-                        <div class="empty-state"><i class="fas fa-history"></i><p>No borrow history yet.</p></div>
-                    <?php else: foreach ($borrowRequests as $request): ?>
-                        <div class="entry-card">
-                            <div style="width:10px;height:10px;border-radius:50%;margin-top:0.6rem;background:<?php echo $request['status'] === 'approved' ? '#10b981' : ($request['status'] === 'pending' ? '#f59e0b' : '#ef4444'); ?>;box-shadow: 0 0 10px <?php echo $request['status'] === 'approved' ? 'rgba(16,185,129,0.4)' : ($request['status'] === 'pending' ? 'rgba(245,158,11,0.4)' : 'rgba(239,68,68,0.4)'); ?>"></div>
-                            <div class="entry-content">
-                                <div class="entry-header">
-                                    <span class="entry-name"><?php echo htmlspecialchars($request['borrower_name']); ?></span>
-                                    <span class="entry-date"><?php echo date('M j, Y', strtotime($request['request_date'])); ?></span>
-                                </div>
-                                <div style="display:flex;align-items:center;gap:0.75rem">
-                                    <span class="status-badge <?php echo $request['status']; ?>" style="position:static;font-size:0.65rem;padding:0.4rem 0.8rem;border-radius:8px">
-                                        <?php echo strtoupper($request['status']); ?>
-                                    </span>
+                        <?php endif; ?>
+                        
+                        <?php if (empty($comments)): ?>
+                            <div class="empty-state"><i class="far fa-comments"></i><p>No comments yet. Start the conversation!</p></div>
+                        <?php else: foreach ($comments as $comment): 
+                            $commenter = loadUserData($comment['user_id']); 
+                            $userLiked = $isLoggedIn && in_array($currentUserId, $comment['likes'] ?? []);
+                        ?>
+                            <div class="entry-card">
+                                <img src="/uploads/profile/<?php echo htmlspecialchars($commenter['personal_info']['profile_pic'] ?? 'default-avatar.jpg'); ?>" class="entry-avatar">
+                                <div class="entry-content">
+                                    <div class="entry-header">
+                                        <span class="entry-name"><?php echo htmlspecialchars($comment['user_name']); ?></span>
+                                        <span class="entry-date"><?php echo formatDate($comment['created_at']); ?></span>
+                                    </div>
+                                    <p class="entry-text" style="margin-bottom:1rem"><?php echo nl2br(htmlspecialchars($comment['comment_text'])); ?></p>
+                                    <button onclick="likeComment('<?php echo $comment['id']; ?>', this)" class="like-btn <?php echo $userLiked ? 'active' : ''; ?>" style="background:var(--bg);padding:0.5rem 1rem;border-radius:10px;display:inline-flex;align-items:center;gap:0.5rem;border:none;cursor:pointer;transition:all 0.2s">
+                                        <i class="fas fa-heart"></i> <span class="like-count" style="font-weight:600"><?php echo count($comment['likes'] ?? []); ?></span>
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    <?php endforeach; endif; ?>
+                        <?php endforeach; endif; ?>
+                    </div>
+                    
+                    <!-- History -->
+                    <div id="history-tab" class="tab-content">
+                        <?php if (empty($borrowRequests)): ?>
+                            <div class="empty-state"><i class="fas fa-history"></i><p>No borrow history yet.</p></div>
+                        <?php else: foreach ($borrowRequests as $request): ?>
+                            <div class="entry-card">
+                                <div style="width:10px;height:10px;border-radius:50%;margin-top:0.6rem;background:<?php echo $request['status'] === 'approved' ? '#10b981' : ($request['status'] === 'pending' ? '#f59e0b' : '#ef4444'); ?>;box-shadow: 0 0 10px <?php echo $request['status'] === 'approved' ? 'rgba(16,185,129,0.4)' : ($request['status'] === 'pending' ? 'rgba(245,158,11,0.4)' : 'rgba(239,68,68,0.4)'); ?>"></div>
+                                <div class="entry-content">
+                                    <div class="entry-header">
+                                        <span class="entry-name"><?php echo htmlspecialchars($request['borrower_name']); ?></span>
+                                        <span class="entry-date"><?php echo date('M j, Y', strtotime($request['request_date'])); ?></span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;gap:0.75rem">
+                                        <span class="status-badge <?php echo $request['status']; ?>" style="position:static;font-size:0.65rem;padding:0.4rem 0.8rem;border-radius:8px">
+                                            <?php echo strtoupper($request['status']); ?>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1320,5 +1353,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action']) && $_P
     </script>
     
     <?php include dirname(__DIR__) . '/includes/footer.php'; ?>
-</body>
-</html>

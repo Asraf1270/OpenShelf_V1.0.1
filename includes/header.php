@@ -198,7 +198,7 @@ if (!file_exists($fullAvatarPath) || $userAvatar === 'default-avatar.jpg') {
         body {
             font-family: system-ui, -apple-system, 'Inter', 'Segoe UI', Roboto, sans-serif;
             background: #f8fafc;
-            padding-top: 100px;
+            padding-top: 72px;
         }
 
         .site-header {
