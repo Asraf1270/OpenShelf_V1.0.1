@@ -240,6 +240,20 @@ if (!$book) {
     exit;
 }
 
+// Count view when user visits the book page (GET request only)
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("UPDATE books SET views = views + 1 WHERE id = ?");
+        $stmt->execute([$bookId]);
+        // Sync the local variable to show updated views immediately
+        $book['views'] = ($book['views'] ?? 0) + 1;
+    } catch (Exception $e) {
+        error_log("❌ Failed to increment views for book ID $bookId: " . $e->getMessage());
+    }
+}
+
+
 // Load owner data
 $owner = $book['owner_data'] ?? null;
 $reviews = $book['reviews'] ?? [];
