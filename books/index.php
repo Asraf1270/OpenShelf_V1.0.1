@@ -15,25 +15,31 @@ define('DATA_PATH', dirname(__DIR__) . '/data/');
 /**
  * Load books from DB with cursor-based pagination
  */
-function getBooks($search = '', $selectedCategories = [], $availability = '', $hall = '', $limit = 25, $cursor_date = null, $cursor_id = null) {
+function getBooks($search = '', $selectedCategories = [], $availability = '', $hall = '', $limit = 25, $cursor_date = null, $cursor_id = null, $sort = 'newest') {
     try {
         $db = getDB();
         list($where, $params) = prepareBookQuery($search, $selectedCategories, $availability, $hall);
 
 
         if ($cursor_date && $cursor_id) {
-            $where[] = "(b.created_at < :c_date1 OR (b.created_at = :c_date2 AND b.id < :c_id))";
+            if ($sort === 'oldest') {
+                $where[] = "(b.created_at > :c_date1 OR (b.created_at = :c_date2 AND b.id > :c_id))";
+            } else {
+                $where[] = "(b.created_at < :c_date1 OR (b.created_at = :c_date2 AND b.id < :c_id))";
+            }
             $params[':c_date1'] = $cursor_date;
             $params[':c_date2'] = $cursor_date;
             $params[':c_id'] = $cursor_id;
         }
+
+        $orderClause = ($sort === 'oldest') ? "ORDER BY b.created_at ASC, b.id ASC" : "ORDER BY b.created_at DESC, b.id DESC";
 
         $sql = "
             SELECT b.id, b.title, b.author, b.category, b.status, b.created_at, b.cover_image, b.rating, b.rating_count, b.owner_id, b.hall, u.name as owner_name, u.profile_pic as owner_avatar, u.hall as owner_hall
             FROM books b 
             LEFT JOIN users u ON b.owner_id = u.id 
             WHERE " . implode(' AND ', $where) . "
-            ORDER BY b.created_at DESC, b.id DESC
+            $orderClause
             LIMIT :limit
         ";
 
@@ -67,9 +73,10 @@ $search = $_GET['search'] ?? '';
 $selectedCategories = isset($_GET['categories']) ? (array)$_GET['categories'] : [];
 $availability = $_GET['availability'] ?? '';
 $hallFilter = $_GET['hall'] ?? '';
+$sortParam = $_GET['sort'] ?? 'newest';
 $limit = 25;
 
-$filteredBooks = getBooks($search, $selectedCategories, $availability, $hallFilter, $limit);
+$filteredBooks = getBooks($search, $selectedCategories, $availability, $hallFilter, $limit, null, null, $sortParam);
 
 // Suggest related books if results are few
 if (!empty($search) && count($filteredBooks) < 4) {
@@ -493,9 +500,10 @@ function toggleCategoryUrl($cat) {
         <!-- Sort dropdown (left) -->
         <div class="sort-controls">
             <select class="styled-select" id="sortSelect" onchange="sortBooks(this.value)">
-                <option value="newest">Sort: Newest First</option>
-                <option value="title">Sort: Title A-Z</option>
-                <option value="author">Sort: Author A-Z</option>
+                <option value="newest" <?php echo ($sortParam === 'newest') ? 'selected' : ''; ?>>Sort: Newest First</option>
+                <option value="oldest" <?php echo ($sortParam === 'oldest') ? 'selected' : ''; ?>>Sort: Oldest First</option>
+                <option value="title" <?php echo ($sortParam === 'title') ? 'selected' : ''; ?>>Sort: Title A-Z</option>
+                <option value="author" <?php echo ($sortParam === 'author') ? 'selected' : ''; ?>>Sort: Author A-Z</option>
             </select>
         </div>
 
@@ -605,6 +613,8 @@ const currentFilters = {
     availability: <?php echo json_encode($availability); ?>,
     hall: <?php echo json_encode($hallFilter); ?>
 };
+
+let currentSort = '<?php echo htmlspecialchars($sortParam); ?>';
 
 document.addEventListener("DOMContentLoaded", () => {
     setupIntersectionObserver();
@@ -800,6 +810,9 @@ async function refreshBooks() {
     if (currentFilters.hall) url.searchParams.set('hall', currentFilters.hall);
     else url.searchParams.delete('hall');
     
+    if (currentSort !== 'newest') url.searchParams.set('sort', currentSort);
+    else url.searchParams.delete('sort');
+    
     window.history.pushState({}, '', url);
 
     // Show/Hide Clear button
@@ -861,6 +874,7 @@ async function loadMoreBooks() {
     currentFilters.categories.forEach(cat => params.append('categories[]', cat));
     if (currentFilters.availability) params.append('availability', currentFilters.availability);
     if (currentFilters.hall) params.append('hall', currentFilters.hall);
+    params.append('sort', currentSort);
     params.append('cursor_date', cursorDate);
     params.append('cursor_id', cursorId);
     params.append('limit', 25);
@@ -1028,13 +1042,21 @@ function getRatingHtml(book) {
 }
 
 function sortBooks(criteria) {
+    currentSort = criteria;
+
+    // Date-based sorts: re-fetch from API so cursor pagination is correct
+    if (criteria === 'newest' || criteria === 'oldest') {
+        refreshBooks();
+        return;
+    }
+
     [booksGridDesktop, booksGridMobile].forEach(grid => {
         if (!grid) return;
         const books = Array.from(grid.children);
         books.sort((a, b) => {
             if (criteria === 'title') return a.dataset.title.localeCompare(b.dataset.title);
             if (criteria === 'author') return a.dataset.author.localeCompare(b.dataset.author);
-            return new Date(b.dataset.date || 0) - new Date(a.dataset.date || 0);
+            return 0;
         });
         
         books.forEach(book => {

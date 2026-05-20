@@ -23,20 +23,28 @@ try {
     
     list($where, $params) = prepareBookQuery($search, $selectedCategories, $availability, $hall, 'b');
 
+    $sort = $_GET['sort'] ?? 'newest';
+
     // Cursor pagination logic (using unique placeholders for date)
     if ($cursor_date && $cursor_id) {
-        $where[] = "(b.created_at < :c_date1 OR (b.created_at = :c_date2 AND b.id < :c_id))";
+        if ($sort === 'oldest') {
+            $where[] = "(b.created_at > :c_date1 OR (b.created_at = :c_date2 AND b.id > :c_id))";
+        } else {
+            $where[] = "(b.created_at < :c_date1 OR (b.created_at = :c_date2 AND b.id < :c_id))";
+        }
         $params[':c_date1'] = $cursor_date;
         $params[':c_date2'] = $cursor_date;
         $params[':c_id'] = $cursor_id;
     }
+
+    $orderClause = ($sort === 'oldest') ? "ORDER BY b.created_at ASC, b.id ASC" : "ORDER BY b.created_at DESC, b.id DESC";
 
     $sql = "
         SELECT b.id, b.title, b.author, b.category, b.status, b.created_at, b.cover_image, b.rating, b.rating_count, b.owner_id, b.hall, u.name as owner_name, u.profile_pic as owner_avatar, u.hall as owner_hall
         FROM books b 
         LEFT JOIN users u ON b.owner_id = u.id 
         WHERE " . implode(' AND ', $where) . "
-        ORDER BY b.created_at DESC, b.id DESC
+        $orderClause
         LIMIT :limit
     ";
 

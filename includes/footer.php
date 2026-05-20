@@ -493,19 +493,6 @@
             visibility: visible;
         }
 
-        .back-to-top:hover {
-            transform: translateY(-5px) scale(1.05);
-            background: var(--primary);
-            color: var(--header-bg);
-            box-shadow: 0 15px 30px -5px rgba(44, 62, 80, 0.3), 
-                        0 10px 20px -8px rgba(44, 62, 80, 0.2);
-        }
-        
-        [data-theme="dark"] .back-to-top:hover {
-            box-shadow: 0 15px 30px -5px rgba(76, 159, 138, 0.4), 
-                        0 10px 20px -8px rgba(76, 159, 138, 0.3);
-        }
-
         @media (max-width: 640px) {
             .back-to-top {
                 bottom: 1.5rem;
